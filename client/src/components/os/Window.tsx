@@ -49,10 +49,37 @@ export function Window({ id, children }: WindowProps) {
 
   // On mobile, only show the active app
   if (isMobile && mobileActiveApp !== id) return null;
-  
+
   if (!windowState.isOpen || windowState.isMinimized) return null;
 
   const isDark = theme === 'dark';
+
+  // Special case: Music player should render without window wrapper
+  if (!isMobile && id === 'music') {
+    return (
+      <Rnd
+        size={{ width: 'auto', height: 'auto' }}
+        position={{ x: windowState.position?.x || 100, y: windowState.position?.y || 100 }}
+        onDragStop={(e, d) => {
+          updateWindowPosition(id, { x: d.x, y: d.y });
+        }}
+        onMouseDown={() => focusWindow(id)}
+        bounds="parent"
+        enableResizing={false}
+        style={{ zIndex: windowState.zIndex }}
+        className="pointer-events-auto"
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {children}
+        </motion.div>
+      </Rnd>
+    );
+  }
 
   if (isMobile) {
     return (
