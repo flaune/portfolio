@@ -59,8 +59,8 @@ export function AudioProvider() {
 
     console.log('[AudioProvider] Track changed:', currentTrack);
 
-    if (!currentTrack?.url) {
-      console.log('[AudioProvider] No URL, pausing');
+    if (!currentTrack?.url || currentTrack.url.trim() === '') {
+      console.log('[AudioProvider] No valid URL, pausing and clearing source');
       audio.pause();
       audio.src = '';
       return;
@@ -96,6 +96,11 @@ export function AudioProvider() {
     console.log('[AudioProvider] Audio src:', audio.src);
 
     if (playState === 'playing') {
+      // Only try to play if we have a valid audio source
+      if (!audio.src || audio.src === '') {
+        console.log('[AudioProvider] Cannot play - no audio source set');
+        return;
+      }
       console.log('[AudioProvider] Attempting to play');
       audio.play().catch((err) => {
         console.error('[AudioProvider] Play error:', err);
