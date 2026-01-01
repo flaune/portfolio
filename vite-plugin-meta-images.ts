@@ -62,15 +62,6 @@ function getDeploymentUrl(): string | null {
     return process.env.APP_URL;
   }
 
-  // Fallback to Replit env vars for backwards compatibility (if still deployed there)
-  if (process.env.REPLIT_INTERNAL_APP_DOMAIN) {
-    return `https://${process.env.REPLIT_INTERNAL_APP_DOMAIN}`;
-  }
-
-  if (process.env.REPLIT_DEV_DOMAIN) {
-    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
-  }
-
   return null;
 }
 
