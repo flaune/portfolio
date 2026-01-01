@@ -51,7 +51,6 @@ export function MusicPlayer() {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full flex items-center justify-center bg-black/50"
       data-testid="webamp-container"
     />
   );
