@@ -53,9 +53,9 @@ export function MusicPlayer() {
   const [bars, setBars] = useState<number[]>(Array(20).fill(10));
   const [marqueeOffset, setMarqueeOffset] = useState(0);
 
-  // Initialize tracks on mount
+  // Initialize tracks on mount - check if tracks have empty URLs
   useEffect(() => {
-    if (tracks.length === 0) {
+    if (tracks.length === 0 || !tracks[0]?.url || tracks[0].url.trim() === '') {
       setMusicTracks(lightModeTracks);
     }
   }, []);
