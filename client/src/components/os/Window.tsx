@@ -132,17 +132,23 @@ export function Window({ id, children }: WindowProps) {
       className="pointer-events-auto"
       dragHandleClassName={id !== 'music' ? "window-header" : undefined}
     >
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ duration: 0.2 }}
         className={cn(
-          "flex flex-col w-full h-full overflow-hidden shadow-2xl rounded-lg transition-colors duration-300",
-          // Light Mode: Persona 4 Warm Style
-          !isDark && "bg-[#FAF9F6] border border-[#D99D3C]/30",
-          // Dark Mode: Futuristic Style
-          isDark && "bg-black/80 border border-blue-500/30 shadow-[0_0_20px_rgba(0,100,255,0.15)] backdrop-blur-md"
+          "flex flex-col w-full h-full overflow-hidden transition-colors duration-300",
+          // Music player: no container styling (Webamp skin only)
+          id === 'music' && "",
+          // Other windows: standard container styling
+          id !== 'music' && cn(
+            "shadow-2xl rounded-lg",
+            // Light Mode: Persona 4 Warm Style
+            !isDark && "bg-[#FAF9F6] border border-[#D99D3C]/30",
+            // Dark Mode: Futuristic Style
+            isDark && "bg-black/80 border border-blue-500/30 shadow-[0_0_20px_rgba(0,100,255,0.15)] backdrop-blur-md"
+          )
         )}
       >
         {/* Window Header - Hidden for music player (Webamp has its own controls) */}
