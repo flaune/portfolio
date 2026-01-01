@@ -32,9 +32,8 @@ export async function setupVite(server: Server, app: Express) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
-
-  // Serve attached_assets with proper MIME types for audio files
+  // Serve attached_assets with proper MIME types for audio files BEFORE Vite middleware
+  // This ensures Express handles these requests before Vite's catch-all
   const assetsPath = path.resolve(__dirname, "..", "attached_assets");
   app.use("/attached_assets", express.static(assetsPath, {
     setHeaders: (res, filePath) => {
@@ -43,6 +42,8 @@ export async function setupVite(server: Server, app: Express) {
       }
     }
   }));
+
+  app.use(vite.middlewares);
 
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
