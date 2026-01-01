@@ -59,10 +59,9 @@ export function AudioProvider() {
 
     console.log('[AudioProvider] Track changed:', currentTrack);
 
+    // Don't do anything if there's no valid URL - avoid setting empty src which causes "Invalid URI" error
     if (!currentTrack?.url || currentTrack.url.trim() === '') {
-      console.log('[AudioProvider] No valid URL, pausing and clearing source');
-      audio.pause();
-      audio.src = '';
+      console.log('[AudioProvider] No valid URL, skipping');
       return;
     }
 
