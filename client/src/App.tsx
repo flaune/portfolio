@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Desktop } from "@/components/os/Desktop";
 import { BootSequence } from "@/components/os/BootSequence";
-import { AudioProvider } from "@/components/AudioProvider";
 import { useState } from "react";
 
 function Router() {
@@ -39,7 +38,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AudioProvider />
         <Toaster />
         <Router />
       </TooltipProvider>

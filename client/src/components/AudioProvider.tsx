@@ -54,31 +54,61 @@ export function AudioProvider() {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    
+
     const audio = audioRef.current;
-    
-    if (!currentTrack?.url) {
-      audio.pause();
-      audio.src = '';
+
+    console.log('[AudioProvider] Track changed:', currentTrack);
+
+    // Don't do anything if there's no valid URL - avoid setting empty src which causes "Invalid URI" error
+    if (!currentTrack?.url || currentTrack.url.trim() === '') {
+      console.log('[AudioProvider] No valid URL, skipping');
       return;
     }
-    
-    if (audio.src !== currentTrack.url) {
+
+    console.log('[AudioProvider] Current audio.src:', audio.src);
+    console.log('[AudioProvider] New track URL:', currentTrack.url);
+
+    // Compare URLs properly - audio.src is absolute, currentTrack.url might be relative
+    const currentSrc = audio.src;
+    const newSrc = currentTrack.url.startsWith('http')
+      ? currentTrack.url
+      : window.location.origin + currentTrack.url;
+
+    console.log('[AudioProvider] Comparing:', currentSrc, 'vs', newSrc);
+
+    if (currentSrc !== newSrc) {
+      console.log('[AudioProvider] Setting new audio source:', currentTrack.url);
       audio.src = currentTrack.url;
       audio.load();
+    } else {
+      console.log('[AudioProvider] Same source, skipping load');
     }
   }, [currentTrack?.url]);
 
   useEffect(() => {
     if (!audioRef.current) return;
-    
+
     const audio = audioRef.current;
-    
+
+    console.log('[AudioProvider] Play state changed:', playState);
+    console.log('[AudioProvider] Audio ready state:', audio.readyState);
+    console.log('[AudioProvider] Audio src:', audio.src);
+
     if (playState === 'playing') {
-      audio.play().catch(console.error);
+      // Only try to play if we have a valid audio source
+      if (!audio.src || audio.src === '') {
+        console.log('[AudioProvider] Cannot play - no audio source set');
+        return;
+      }
+      console.log('[AudioProvider] Attempting to play');
+      audio.play().catch((err) => {
+        console.error('[AudioProvider] Play error:', err);
+      });
     } else if (playState === 'paused') {
+      console.log('[AudioProvider] Pausing');
       audio.pause();
     } else if (playState === 'stopped') {
+      console.log('[AudioProvider] Stopping');
       audio.pause();
       audio.currentTime = 0;
     }
