@@ -55,7 +55,10 @@ export function MusicPlayer() {
 
   // Initialize tracks on mount - check if tracks have empty URLs
   useEffect(() => {
+    console.log('[MusicPlayer] Mount - Current tracks:', tracks);
+    console.log('[MusicPlayer] Light mode tracks to load:', lightModeTracks);
     if (tracks.length === 0 || !tracks[0]?.url || tracks[0].url.trim() === '') {
+      console.log('[MusicPlayer] Loading tracks with URLs');
       setMusicTracks(lightModeTracks);
     }
   }, []);
