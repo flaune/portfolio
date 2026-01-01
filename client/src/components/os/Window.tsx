@@ -130,7 +130,7 @@ export function Window({ id, children }: WindowProps) {
       enableResizing={!isFullscreen}
       style={{ zIndex: windowState.zIndex }}
       className="pointer-events-auto"
-      dragHandleClassName="window-header"
+      dragHandleClassName={id !== 'music' ? "window-header" : undefined}
     >
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }}
@@ -145,61 +145,63 @@ export function Window({ id, children }: WindowProps) {
           isDark && "bg-black/80 border border-blue-500/30 shadow-[0_0_20px_rgba(0,100,255,0.15)] backdrop-blur-md"
         )}
       >
-        {/* Window Header */}
-        <div 
-          className={cn(
-            "window-header h-8 flex items-center justify-between px-3 select-none cursor-default shrink-0",
-            !isDark && "bg-[#EAD477] border-b border-[#D99D3C]/30",
-            isDark && "bg-black/90 border-b border-blue-500/30"
-          )}
-          onDoubleClick={() => {}}
-        >
-          {/* Traffic Lights */}
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={(e) => { e.stopPropagation(); closeWindow(id); }}
-              className={cn(
-                "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
-                !isDark && "bg-[#ff5f56] border border-[#e0443e] hover:brightness-90",
-                isDark && "bg-transparent border border-red-500 hover:bg-red-500/20 text-red-500"
-              )}
-            >
-              <X className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); minimizeWindow(id); }}
-              className={cn(
-                "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
-                !isDark && "bg-[#ffbd2e] border border-[#dea123] hover:brightness-90",
-                isDark && "bg-transparent border border-yellow-500 hover:bg-yellow-500/20 text-yellow-500"
-              )}
-            >
-              <Minus className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); toggleFullscreen(id); }}
-              className={cn(
-                "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
-                !isDark && "bg-[#27c93f] border border-[#1aab29] hover:brightness-90",
-                isDark && "bg-transparent border border-green-500 hover:bg-green-500/20 text-green-500"
-              )}
-              data-testid="button-fullscreen"
-            >
-              <Maximize2 className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
-            </button>
-          </div>
+        {/* Window Header - Hidden for music player (Webamp has its own controls) */}
+        {id !== 'music' && (
+          <div
+            className={cn(
+              "window-header h-8 flex items-center justify-between px-3 select-none cursor-default shrink-0",
+              !isDark && "bg-[#EAD477] border-b border-[#D99D3C]/30",
+              isDark && "bg-black/90 border-b border-blue-500/30"
+            )}
+            onDoubleClick={() => {}}
+          >
+            {/* Traffic Lights */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); closeWindow(id); }}
+                className={cn(
+                  "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
+                  !isDark && "bg-[#ff5f56] border border-[#e0443e] hover:brightness-90",
+                  isDark && "bg-transparent border border-red-500 hover:bg-red-500/20 text-red-500"
+                )}
+              >
+                <X className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); minimizeWindow(id); }}
+                className={cn(
+                  "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
+                  !isDark && "bg-[#ffbd2e] border border-[#dea123] hover:brightness-90",
+                  isDark && "bg-transparent border border-yellow-500 hover:bg-yellow-500/20 text-yellow-500"
+                )}
+              >
+                <Minus className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleFullscreen(id); }}
+                className={cn(
+                  "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
+                  !isDark && "bg-[#27c93f] border border-[#1aab29] hover:brightness-90",
+                  isDark && "bg-transparent border border-green-500 hover:bg-green-500/20 text-green-500"
+                )}
+                data-testid="button-fullscreen"
+              >
+                <Maximize2 className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
+              </button>
+            </div>
 
-          {/* Title */}
-          <div className={cn(
-            "absolute left-0 right-0 text-center pointer-events-none text-sm font-medium",
-            !isDark && "text-[#2C2C2C]",
-            isDark && "text-blue-400 font-tech tracking-widest uppercase text-xs"
-          )}>
-            {windowState.title}
-          </div>
+            {/* Title */}
+            <div className={cn(
+              "absolute left-0 right-0 text-center pointer-events-none text-sm font-medium",
+              !isDark && "text-[#2C2C2C]",
+              isDark && "text-blue-400 font-tech tracking-widest uppercase text-xs"
+            )}>
+              {windowState.title}
+            </div>
 
-          <div className="w-14" /> {/* Spacer for balance */}
-        </div>
+            <div className="w-14" /> {/* Spacer for balance */}
+          </div>
+        )}
 
         {/* Window Content */}
         <div className="flex-1 overflow-auto relative">
