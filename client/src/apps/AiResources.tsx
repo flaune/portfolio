@@ -130,7 +130,7 @@ export function Bookshelf() {
       )}>
         <div className="flex items-center gap-3 mb-3">
           <BookOpen className={cn("w-6 h-6", isDark ? "text-cyan-400" : "text-amber-600")} />
-          <h1 className="text-2xl font-bold">AI Resources Bookshelf</h1>
+          <h1 className="text-2xl font-bold">AI Resources</h1>
         </div>
         
         {/* Search Bar */}
