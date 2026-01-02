@@ -6,7 +6,7 @@ import { MiniMusicPlayer } from '../MiniMusicPlayer';
 import { cn } from '@/lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { FolderOpen, Mail as MailIcon, Music, Video, Palette, StickyNote, BookOpen, Linkedin, Twitter, FileText, Image } from 'lucide-react';
+import { FolderOpen, Mail as MailIcon, Music, Video, Palette, StickyNote, BookOpen, Linkedin, Twitter, FileText, Image, Piano } from 'lucide-react';
 import { MikanraIcon } from '../icons/MikanraIcon';
 import { useMemo } from 'react';
 
@@ -20,6 +20,7 @@ import { Paint } from '@/apps/Paint';
 import { Notes } from '@/apps/Notes';
 import { Bookshelf } from '@/apps/AiResources';
 import { LinkedIn } from '@/apps/LinkedIn';
+import { Kalimba } from '@/apps/Kalimba';
 
 // Mobile app grid config
 const mobileApps: { id: AppId; icon: React.ElementType; label: string; external?: string }[] = [
@@ -30,6 +31,7 @@ const mobileApps: { id: AppId; icon: React.ElementType; label: string; external?
   { id: 'paint', icon: Palette, label: 'Paint' },
   { id: 'notes', icon: StickyNote, label: 'Notes' },
   { id: 'bookshelf', icon: BookOpen, label: 'AI Bookshelf' },
+  { id: 'kalimba', icon: Piano, label: 'Kalimba' },
   { id: 'linkedin', icon: Linkedin, label: 'LinkedIn' },
   { id: 'twitter', icon: Twitter, label: 'X', external: 'https://x.com/Bhachz' },
   { id: 'gallery', icon: Image, label: 'My Portfolio' },
@@ -187,6 +189,7 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
           <Window key="paint" id="paint"><Paint /></Window>
           <Window key="notes" id="notes"><Notes onEasterEgg={onEasterEgg} /></Window>
           <Window key="bookshelf" id="bookshelf"><Bookshelf /></Window>
+          <Window key="kalimba" id="kalimba"><Kalimba /></Window>
           <Window key="linkedin" id="linkedin"><LinkedIn /></Window>
         </AnimatePresence>
       </div>
