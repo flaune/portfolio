@@ -96,7 +96,7 @@ export function Dock() {
     { id: 'video', icon: Video, label: 'Videos' },
     { id: 'paint', icon: Palette, label: 'Paint' },
     { id: 'notes', icon: StickyNote, label: 'Notes' },
-    { id: 'bookshelf', icon: BookOpen, label: 'AI Bookshelf' },
+    { id: 'bookshelf', icon: BookOpen, label: 'AI Resources' },
     { id: 'kalimba', icon: Piano, label: 'Kalimba' },
     { id: 'linkedin', icon: Linkedin, label: 'LinkedIn' },
     { id: 'twitter', icon: Twitter, label: 'X', external: 'https://x.com/Bhachz' },

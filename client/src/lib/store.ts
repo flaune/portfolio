@@ -99,7 +99,7 @@ const initialWindows: Record<AppId, WindowState> = {
   video: { id: 'video', title: 'Video Player', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 250, y: 120 }, size: { width: 700, height: 450 } },
   paint: { id: 'paint', title: 'Paint', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 300, y: 150 }, size: { width: 600, height: 500 } },
   notes: { id: 'notes', title: 'Notes', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 180, y: 90 }, size: { width: 500, height: 450 } },
-  bookshelf: { id: 'bookshelf', title: 'AI Bookshelf', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 220, y: 110 }, size: { width: 700, height: 550 } },
+  bookshelf: { id: 'bookshelf', title: 'AI Resources', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 220, y: 110 }, size: { width: 700, height: 550 } },
   linkedin: { id: 'linkedin', title: 'LinkedIn', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 350, y: 80 }, size: { width: 400, height: 520 } },
   twitter: { id: 'twitter', title: 'X', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0 },
   substack: { id: 'substack', title: 'Substack', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0 },
