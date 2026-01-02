@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
 import Webamp from 'webamp';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('Webamp');
 
 // MP3 tracks with proper URLs
 const tracks = [
@@ -34,9 +37,9 @@ export function MusicPlayer() {
       });
 
       webamp.renderWhenReady(containerRef.current).then(() => {
-        console.log('[Webamp] Rendered successfully');
+        logger.log('Rendered successfully');
       }).catch((error) => {
-        console.error('[Webamp] Failed to render:', error);
+        logger.error('Failed to render:', error);
       });
 
       webampRef.current = webamp;
@@ -45,7 +48,7 @@ export function MusicPlayer() {
     // Cleanup on unmount
     return () => {
       if (webampRef.current) {
-        console.log('[Webamp] Disposing');
+        logger.log('Disposing');
         webampRef.current.dispose();
         webampRef.current = null;
       }

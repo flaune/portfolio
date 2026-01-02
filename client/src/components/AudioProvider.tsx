@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useOSStore } from '@/lib/store';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('AudioProvider');
 
 export function AudioProvider() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -35,7 +38,7 @@ export function AudioProvider() {
     };
 
     const handleError = () => {
-      console.error('Audio error:', audio.error);
+      logger.error('Audio error:', audio.error);
       musicPause();
     };
 
@@ -57,16 +60,13 @@ export function AudioProvider() {
 
     const audio = audioRef.current;
 
-    console.log('[AudioProvider] Track changed:', currentTrack);
+    logger.log('Track changed:', currentTrack?.title);
 
     // Don't do anything if there's no valid URL - avoid setting empty src which causes "Invalid URI" error
     if (!currentTrack?.url || currentTrack.url.trim() === '') {
-      console.log('[AudioProvider] No valid URL, skipping');
+      logger.log('No valid URL, skipping');
       return;
     }
-
-    console.log('[AudioProvider] Current audio.src:', audio.src);
-    console.log('[AudioProvider] New track URL:', currentTrack.url);
 
     // Compare URLs properly - audio.src is absolute, currentTrack.url might be relative
     const currentSrc = audio.src;
@@ -74,14 +74,10 @@ export function AudioProvider() {
       ? currentTrack.url
       : window.location.origin + currentTrack.url;
 
-    console.log('[AudioProvider] Comparing:', currentSrc, 'vs', newSrc);
-
     if (currentSrc !== newSrc) {
-      console.log('[AudioProvider] Setting new audio source:', currentTrack.url);
+      logger.log('Setting new audio source:', currentTrack.title);
       audio.src = currentTrack.url;
       audio.load();
-    } else {
-      console.log('[AudioProvider] Same source, skipping load');
     }
   }, [currentTrack?.url]);
 
@@ -90,25 +86,20 @@ export function AudioProvider() {
 
     const audio = audioRef.current;
 
-    console.log('[AudioProvider] Play state changed:', playState);
-    console.log('[AudioProvider] Audio ready state:', audio.readyState);
-    console.log('[AudioProvider] Audio src:', audio.src);
+    logger.log('Play state changed:', playState);
 
     if (playState === 'playing') {
       // Only try to play if we have a valid audio source
       if (!audio.src || audio.src === '') {
-        console.log('[AudioProvider] Cannot play - no audio source set');
+        logger.warn('Cannot play - no audio source set');
         return;
       }
-      console.log('[AudioProvider] Attempting to play');
       audio.play().catch((err) => {
-        console.error('[AudioProvider] Play error:', err);
+        logger.error('Play error:', err);
       });
     } else if (playState === 'paused') {
-      console.log('[AudioProvider] Pausing');
       audio.pause();
     } else if (playState === 'stopped') {
-      console.log('[AudioProvider] Stopping');
       audio.pause();
       audio.currentTime = 0;
     }
