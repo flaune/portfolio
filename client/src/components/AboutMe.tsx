@@ -311,18 +311,11 @@ export function AboutMe() {
               "font-semibold",
               !isDark && "text-gray-900",
               isDark && "text-white"
-            )}> comics and light novels</span>, always looking for stories that stick with you. 
-            I'm planning to add a bookshelf here soon, it's on my roadmap of things to do for this website!
+            )}> comics, manga and light novels</span>, always looking for stories that stick with you. 
+            
           </p>
           
-          <div className={cn(
-            "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm",
-            !isDark && "bg-gray-100 text-gray-600",
-            isDark && "bg-white/5 text-gray-400 border border-cyan-500/10"
-          )}>
-            <span className="text-lg">📚</span>
-            <span>Bookshelf coming soon...</span>
-          </div>
+        
         </MotionDiv>
 
       </div>
