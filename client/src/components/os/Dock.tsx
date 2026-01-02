@@ -3,17 +3,18 @@ import { useRef } from 'react';
 import { useOSStore, AppId } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { 
-  Mail, 
-  Music, 
-  Video, 
-  Palette, 
-  Linkedin, 
-  Twitter, 
+import {
+  Mail,
+  Music,
+  Video,
+  Palette,
+  Linkedin,
+  Twitter,
   FileText,
   FolderOpen,
   StickyNote,
-  BookOpen
+  BookOpen,
+  Piano
 } from 'lucide-react';
 
 function DockIcon({ mouseX, id, icon: Icon, label, isMobile, external }: { mouseX: MotionValue, id: AppId, icon: any, label: string, isMobile: boolean, external?: string }) {
@@ -96,6 +97,7 @@ export function Dock() {
     { id: 'paint', icon: Palette, label: 'Paint' },
     { id: 'notes', icon: StickyNote, label: 'Notes' },
     { id: 'bookshelf', icon: BookOpen, label: 'AI Bookshelf' },
+    { id: 'kalimba', icon: Piano, label: 'Kalimba' },
     { id: 'linkedin', icon: Linkedin, label: 'LinkedIn' },
     { id: 'twitter', icon: Twitter, label: 'X', external: 'https://x.com/Bhachz' },
     { id: 'substack', icon: FileText, label: 'Substack', external: 'https://substack.com/@bhach' },

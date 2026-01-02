@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type AppId = 'finder' | 'gallery' | 'mail' | 'music' | 'video' | 'paint' | 'notes' | 'bookshelf' | 'linkedin' | 'twitter' | 'substack';
+export type AppId = 'finder' | 'gallery' | 'mail' | 'music' | 'video' | 'paint' | 'notes' | 'bookshelf' | 'linkedin' | 'twitter' | 'substack' | 'kalimba';
 
 // Music controller types
 export interface Track {
@@ -103,6 +103,7 @@ const initialWindows: Record<AppId, WindowState> = {
   linkedin: { id: 'linkedin', title: 'LinkedIn', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 350, y: 80 }, size: { width: 400, height: 520 } },
   twitter: { id: 'twitter', title: 'X', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0 },
   substack: { id: 'substack', title: 'Substack', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0 },
+  kalimba: { id: 'kalimba', title: 'Kalimba', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 200, y: 100 }, size: { width: 600, height: 700 } },
 };
 
 // Initialize theme from localStorage or default to 'light'
