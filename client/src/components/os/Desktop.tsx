@@ -18,7 +18,7 @@ import { MusicPlayer } from '@/apps/MusicPlayer';
 import { VideoPlayer } from '@/apps/VideoPlayer';
 import { Paint } from '@/apps/Paint';
 import { Notes } from '@/apps/Notes';
-import { Bookshelf } from '@/apps/Bookshelf';
+import { Bookshelf } from '@/apps/AiResources';
 import { LinkedIn } from '@/apps/LinkedIn';
 
 // Mobile app grid config
