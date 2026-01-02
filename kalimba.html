@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Kalimba - Virtual Instrument</title>
+    <link rel="stylesheet" href="kalimba.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Virtual Kalimba</h1>
+            <p class="subtitle">17-Key C Major Tuning</p>
+        </header>
+
+        <div class="kalimba-wrapper">
+            <div class="kalimba-board">
+                <div class="sound-hole"></div>
+
+                <div class="tines-container">
+                    <!-- Tines arranged in traditional kalimba pattern (alternating from center) -->
+                    <!-- Left side (odd positions from center) -->
+                    <div class="tine left" data-note="D5" data-key="a" style="--tine-height: 75%">
+                        <div class="tine-key">A</div>
+                        <div class="tine-note">D</div>
+                    </div>
+                    <div class="tine left" data-note="F5" data-key="s" style="--tine-height: 70%">
+                        <div class="tine-key">S</div>
+                        <div class="tine-note">F</div>
+                    </div>
+                    <div class="tine left" data-note="A5" data-key="d" style="--tine-height: 65%">
+                        <div class="tine-key">D</div>
+                        <div class="tine-note">A</div>
+                    </div>
+                    <div class="tine left" data-note="C6" data-key="f" style="--tine-height: 58%">
+                        <div class="tine-key">F</div>
+                        <div class="tine-note">C</div>
+                    </div>
+                    <div class="tine left" data-note="E6" data-key="g" style="--tine-height: 52%">
+                        <div class="tine-key">G</div>
+                        <div class="tine-note">E</div>
+                    </div>
+                    <div class="tine left" data-note="G6" data-key="h" style="--tine-height: 47%">
+                        <div class="tine-key">H</div>
+                        <div class="tine-note">G</div>
+                    </div>
+                    <div class="tine left" data-note="B6" data-key="j" style="--tine-height: 43%">
+                        <div class="tine-key">J</div>
+                        <div class="tine-note">B</div>
+                    </div>
+                    <div class="tine left" data-note="D7" data-key="k" style="--tine-height: 40%">
+                        <div class="tine-key">K</div>
+                        <div class="tine-note">D</div>
+                    </div>
+
+                    <!-- Center tine -->
+                    <div class="tine center" data-note="C5" data-key="space" style="--tine-height: 80%">
+                        <div class="tine-key">SPACE</div>
+                        <div class="tine-note">C</div>
+                    </div>
+
+                    <!-- Right side (even positions from center) -->
+                    <div class="tine right" data-note="E5" data-key="l" style="--tine-height: 75%">
+                        <div class="tine-key">L</div>
+                        <div class="tine-note">E</div>
+                    </div>
+                    <div class="tine right" data-note="G5" data-key=";" style="--tine-height: 70%">
+                        <div class="tine-key">;</div>
+                        <div class="tine-note">G</div>
+                    </div>
+                    <div class="tine right" data-note="B5" data-key="'" style="--tine-height: 65%">
+                        <div class="tine-key">'</div>
+                        <div class="tine-note">B</div>
+                    </div>
+                    <div class="tine right" data-note="D6" data-key="q" style="--tine-height: 58%">
+                        <div class="tine-key">Q</div>
+                        <div class="tine-note">D</div>
+                    </div>
+                    <div class="tine right" data-note="F6" data-key="w" style="--tine-height: 52%">
+                        <div class="tine-key">W</div>
+                        <div class="tine-note">F</div>
+                    </div>
+                    <div class="tine right" data-note="A6" data-key="e" style="--tine-height: 47%">
+                        <div class="tine-key">E</div>
+                        <div class="tine-note">A</div>
+                    </div>
+                    <div class="tine right" data-note="C7" data-key="r" style="--tine-height: 43%">
+                        <div class="tine-key">R</div>
+                        <div class="tine-note">C</div>
+                    </div>
+                    <div class="tine right" data-note="E7" data-key="t" style="--tine-height: 40%">
+                        <div class="tine-key">T</div>
+                        <div class="tine-note">E</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <p class="desktop-only">🎹 Use keyboard keys or click the tines to play</p>
+            <p class="mobile-only">👆 Tap the tines to play</p>
+        </div>
+    </div>
+
+    <script src="kalimba.js"></script>
+</body>
+</html>
