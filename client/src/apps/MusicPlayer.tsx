@@ -15,6 +15,10 @@ const tracks = [
     url: "/attached_assets/home_made_kazoku_-_thank_you_1765390331882.mp3",
     defaultName: "Home Made Kazoku - Thank You"
   },
+  {
+    url: "/attached_assets/Last Dinosaur - Zoom.mp3",
+    defaultName: "Last Dinosaur - Zoom"
+  },
 ];
 
 export function MusicPlayer() {
