@@ -99,6 +99,7 @@ export function Window({ id, children }: WindowProps) {
         {/* Mobile Header */}
         <div className={cn(
           "h-12 flex items-center px-4 shrink-0 border-b relative",
+          "pt-[env(safe-area-inset-top)]",
           !isDark && "bg-[#EAD477] border-[#D99D3C]/30",
           isDark && "bg-[#1a1a1a] border-gray-800"
         )}>

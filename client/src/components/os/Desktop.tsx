@@ -95,7 +95,7 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
       
       {/* Mobile App Grid - shown when no app is active */}
       {isMobile && !mobileActiveApp && (
-        <div className="absolute inset-0 top-8 flex items-center justify-center p-6">
+        <div className="absolute inset-0 top-8 flex items-center justify-center px-6 pb-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">
           <div className="grid grid-cols-4 gap-4 max-w-sm" role="grid" aria-label="Applications">
             {mobileApps.map((app) => {
               const Icon = app.icon;
