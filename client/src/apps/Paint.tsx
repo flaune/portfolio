@@ -61,17 +61,35 @@ export function Paint() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     const pos = getPosition(e);
     ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : color;
-    ctx.lineWidth = tool === 'eraser' ? 20 : lineWidth;
+
+    // Configure drawing based on tool
+    if (tool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = 'rgba(0,0,0,1)'; // Color doesn't matter for eraser
+      ctx.lineWidth = 20;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+    }
+
     ctx.lineCap = 'round';
     ctx.stroke();
   };
 
   const stopDrawing = () => {
     setIsDrawing(false);
+    // Reset composite operation when done drawing
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
   };
 
   const clearCanvas = () => {
@@ -79,6 +97,7 @@ export function Paint() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (ctx) {
+      ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }

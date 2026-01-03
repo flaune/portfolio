@@ -1,7 +1,7 @@
 import { useOSStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { User, Briefcase, FileText, ChevronRight, TrendingUp, ExternalLink, BookOpen, Gamepad2 } from 'lucide-react';
+import { User, Briefcase, FileText, ChevronRight, TrendingUp, ExternalLink, BookOpen, Gamepad2, Download } from 'lucide-react';
 import { useState } from 'react';
 import { AboutMe } from '@/components/AboutMe';
 
@@ -13,6 +13,14 @@ type FileItem = {
   content?: React.ReactNode;
 };
 
+// Resume configuration - add your resume PDF to /public folder and update this path
+const RESUME_CONFIG = {
+  // Set this to your resume file path in the public folder
+  // Example: "/resume.pdf" or "/documents/YourName_Resume.pdf"
+  url: "/resume.pdf",
+  filename: "Resume.pdf" // The filename that will be used when downloading
+};
+
 const caseStudies = [
   {
     id: 1,
@@ -22,7 +30,9 @@ const caseStudies = [
     description: "Analyzed Webtoon's unique platform economics, creator revenue models, and user acquisition strategies. Explored how the platform balances free content access with premium monetization.",
     tags: ["Platform Economics", "Content Strategy", "Growth"],
     icon: BookOpen,
-    color: "from-green-500 to-emerald-600"
+    color: "from-green-500 to-emerald-600",
+    // Add your external URL here (Medium, Notion, etc.)
+    url: ""
   },
   {
     id: 2,
@@ -32,13 +42,25 @@ const caseStudies = [
     description: "Examined Epic Games Store's aggressive market entry strategy, exclusive content deals, and revenue share disruption. Analyzed the platform's approach to challenging established market leaders.",
     tags: ["Platform Economics", "Gaming", "Market Strategy"],
     icon: Gamepad2,
-    color: "from-blue-500 to-indigo-600"
+    color: "from-blue-500 to-indigo-600",
+    // Add your external URL here (Medium, Notion, etc.)
+    url: ""
   }
 ];
 
 const CaseStudiesContent = () => {
-  const { theme } = useOSStore();
+  const { theme, openWindow } = useOSStore();
   const isDark = theme === 'dark';
+
+  const handleViewCaseStudy = (study: typeof caseStudies[0]) => {
+    if (study.url && study.url.trim() !== '') {
+      // If URL is configured, open it in a new tab
+      window.open(study.url, '_blank');
+    } else {
+      // Otherwise, open the Gallery to view interactive case studies
+      openWindow('gallery');
+    }
+  };
   
   return (
     <div className="p-6 space-y-6">
@@ -118,13 +140,17 @@ const CaseStudiesContent = () => {
               </div>
               
               {/* View Button */}
-              <button className={cn(
-                "flex items-center gap-1.5 text-sm font-semibold transition-colors",
-                !isDark && "text-blue-600 hover:text-blue-700",
-                isDark && "text-blue-400 hover:text-blue-300"
-              )}>
-                <span>View Case Study</span>
-                <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <button
+                onClick={() => handleViewCaseStudy(study)}
+                aria-label={`View ${study.title}`}
+                className={cn(
+                  "flex items-center gap-1.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded px-2 py-1",
+                  !isDark && "text-blue-600 hover:text-blue-700",
+                  isDark && "text-blue-400 hover:text-blue-300"
+                )}
+              >
+                <span>{study.url ? 'Read Full Analysis' : 'View Interactive Portfolio'}</span>
+                <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -139,6 +165,16 @@ export function Finder() {
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
   const [selectedId, setSelectedId] = useState<string>('about');
+
+  const handleResumeDownload = () => {
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = RESUME_CONFIG.url;
+    link.download = RESUME_CONFIG.filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const sidebarItems = [
     { id: 'about', label: 'About Me', icon: User },
@@ -207,12 +243,57 @@ export function Finder() {
           {selectedId === 'about' && <AboutMe />}
           {selectedId === 'casestudies' && <CaseStudiesContent />}
           {selectedId === 'resume' && (
-             <div className="flex flex-col items-center justify-center h-full text-center p-10 opacity-60">
-               <FileText className="w-16 h-16 mb-4" />
-               <p className="font-medium">Resume.pdf</p>
-               <p className="text-xs mt-2 max-w-[200px]">My experience and skills, condensed for your convenience</p>
-               <button className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Download Resume</button>
-             </div>
+            <div className="flex flex-col items-center justify-center h-full text-center p-10">
+              <div className={cn(
+                "w-32 h-32 rounded-2xl flex items-center justify-center mb-6 shadow-lg",
+                !isDark && "bg-gradient-to-br from-[#EAD477] to-[#D99D3C] border border-[#D99D3C]/50",
+                isDark && "bg-blue-900/50 border border-blue-400/50 shadow-[0_0_20px_rgba(0,100,255,0.4)]"
+              )}>
+                <FileText className={cn(
+                  "w-16 h-16",
+                  !isDark && "text-[#2C2C2C]",
+                  isDark && "text-blue-300"
+                )} />
+              </div>
+
+              <h2 className={cn(
+                "text-2xl font-bold mb-2",
+                !isDark && "text-gray-900",
+                isDark && "text-white"
+              )}>
+                {RESUME_CONFIG.filename}
+              </h2>
+
+              <p className={cn(
+                "text-sm mb-6 max-w-md",
+                !isDark && "text-gray-600",
+                isDark && "text-gray-400"
+              )}>
+                My professional experience, skills, and achievements in a comprehensive document
+              </p>
+
+              <button
+                onClick={handleResumeDownload}
+                aria-label="Download resume PDF"
+                className={cn(
+                  "flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg",
+                  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+                  !isDark && "bg-blue-600 hover:bg-blue-700 text-white focus-visible:ring-blue-500",
+                  isDark && "bg-blue-500 hover:bg-blue-400 text-white focus-visible:ring-blue-400"
+                )}
+              >
+                <Download className="w-5 h-5" aria-hidden="true" />
+                <span>Download Resume</span>
+              </button>
+
+              <p className={cn(
+                "text-xs mt-4",
+                !isDark && "text-gray-500",
+                isDark && "text-gray-500"
+              )}>
+                PDF format • Ready to print
+              </p>
+            </div>
           )}
         </div>
       </div>
