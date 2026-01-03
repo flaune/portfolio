@@ -1,53 +1,82 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Webamp from 'webamp';
 import { createLogger } from '@/lib/logger';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useOSStore, Track } from '@/lib/store';
 
 const logger = createLogger('Webamp');
 
-// MP3 tracks with proper URLs
-const tracks = [
+// MP3 tracks with proper URLs matching the Track interface
+const tracks: Track[] = [
   {
+    id: 1,
+    title: "Lyn - No More What If",
     url: "/attached_assets/lyn_-_no_more_what_if_1765390331882.mp3",
-    defaultName: "Lyn - No More What If"
+    duration: 0
   },
   {
+    id: 2,
+    title: "Philip Bailey - Easy Lover",
     url: "/attached_assets/Philip_Bailey_-_Easy_Lover_1765390331881.mp3",
-    defaultName: "Philip Bailey - Easy Lover"
+    duration: 0
   },
   {
+    id: 3,
+    title: "Home Made Kazoku - Thank You",
     url: "/attached_assets/home_made_kazoku_-_thank_you_1765390331882.mp3",
-    defaultName: "Home Made Kazoku - Thank You"
+    duration: 0
   },
   {
+    id: 4,
+    title: "Last Dinosaur - Zoom",
     url: "/attached_assets/Last Dinosaur - Zoom.mp3",
-    defaultName: "Last Dinosaur - Zoom"
+    duration: 0
   },
 ];
 
 // Mobile-friendly audio player component
 function MobileMusicPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
 
+  // Use shared store state
+  const {
+    music,
+    musicPlay,
+    musicPause,
+    musicNext,
+    musicPrev,
+    musicUpdateTime,
+    musicSetDuration,
+    musicSetVolume,
+    setMusicTracks
+  } = useOSStore();
+
+  const { currentTrackIndex, playState, currentTime, duration, volume } = music;
   const currentTrack = tracks[currentTrackIndex];
+  const isPlaying = playState === 'playing';
 
+  // Initialize tracks in store on mount
+  useEffect(() => {
+    setMusicTracks(tracks);
+  }, [setMusicTracks]);
+
+  // Sync audio element with store state
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
+    const updateTime = () => musicUpdateTime(audio.currentTime);
+    const updateDuration = () => {
+      if (audio.duration && !isNaN(audio.duration)) {
+        musicSetDuration(audio.duration);
+      }
+    };
     const handleEnded = () => {
       // Auto-play next track
       if (currentTrackIndex < tracks.length - 1) {
-        setCurrentTrackIndex(prev => prev + 1);
+        musicNext();
       } else {
-        setIsPlaying(false);
+        musicPause();
       }
     };
 
@@ -60,8 +89,9 @@ function MobileMusicPlayer() {
       audio.removeEventListener('loadedmetadata', updateDuration);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [currentTrackIndex]);
+  }, [currentTrackIndex, musicUpdateTime, musicSetDuration, musicNext, musicPause]);
 
+  // Handle playback state changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -69,44 +99,62 @@ function MobileMusicPlayer() {
     if (isPlaying) {
       audio.play().catch(err => {
         logger.error('Failed to play:', err);
-        setIsPlaying(false);
+        musicPause();
       });
     } else {
       audio.pause();
     }
-  }, [isPlaying, currentTrackIndex]);
+  }, [isPlaying, currentTrackIndex, musicPause]);
 
+  // Sync volume
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = volume;
+      audioRef.current.volume = volume / 100;
     }
   }, [volume]);
 
-  const togglePlayPause = () => setIsPlaying(!isPlaying);
+  // Sync current time when changed externally (e.g., from store)
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Only update if significantly different (avoid feedback loop)
+    if (Math.abs(audio.currentTime - currentTime) > 0.5) {
+      audio.currentTime = currentTime;
+    }
+  }, [currentTime]);
+
+  const togglePlayPause = () => {
+    if (isPlaying) {
+      musicPause();
+    } else {
+      musicPlay();
+    }
+  };
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value);
-    setCurrentTime(newTime);
+    musicUpdateTime(newTime);
     if (audioRef.current) {
       audioRef.current.currentTime = newTime;
     }
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVolume(parseFloat(e.target.value));
+    musicSetVolume(parseFloat(e.target.value) * 100);
   };
 
   const playNext = () => {
     if (currentTrackIndex < tracks.length - 1) {
-      setCurrentTrackIndex(prev => prev + 1);
-      setIsPlaying(true);
+      musicNext();
+      musicPlay();
     }
   };
 
   const playPrevious = () => {
     if (currentTrackIndex > 0) {
-      setCurrentTrackIndex(prev => prev - 1);
-      setIsPlaying(true);
+      musicPrev();
+      musicPlay();
     }
   };
 
@@ -122,7 +170,7 @@ function MobileMusicPlayer() {
       <audio ref={audioRef} src={currentTrack.url} preload="metadata" />
 
       <div className="track-info">
-        <div className="track-name">{currentTrack.defaultName}</div>
+        <div className="track-name">{currentTrack.title}</div>
         <div className="track-counter">{currentTrackIndex + 1} / {tracks.length}</div>
       </div>
 
@@ -174,11 +222,11 @@ function MobileMusicPlayer() {
           min="0"
           max="1"
           step="0.01"
-          value={volume}
+          value={volume / 100}
           onChange={handleVolumeChange}
           aria-label="Volume"
         />
-        <span className="volume-percentage">{Math.round(volume * 100)}%</span>
+        <span className="volume-percentage">{Math.round(volume)}%</span>
       </div>
 
       <style>{`
@@ -366,16 +414,64 @@ function DesktopMusicPlayer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const webampRef = useRef<Webamp | null>(null);
 
+  // Use shared store state
+  const {
+    music,
+    setMusicTracks,
+    musicSetTrack,
+    musicPlay,
+    musicPause,
+    musicUpdateTime,
+    musicSetVolume
+  } = useOSStore();
+
+  const { currentTrackIndex, playState, volume } = music;
+
+  // Initialize tracks in store on mount
+  useEffect(() => {
+    setMusicTracks(tracks);
+  }, [setMusicTracks]);
+
   useEffect(() => {
     // Initialize Webamp when component mounts
     if (containerRef.current && !webampRef.current) {
+      const webampTracks = tracks.map(track => ({
+        url: track.url,
+        metaData: {
+          artist: track.title.split(' - ')[0],
+          title: track.title.split(' - ')[1] || track.title
+        }
+      }));
+
       const webamp = new Webamp({
-        initialTracks: tracks,
+        initialTracks: webampTracks,
         enableHotkeys: true,
       });
 
       webamp.renderWhenReady(containerRef.current).then(() => {
         logger.log('Rendered successfully');
+
+        // Sync initial state from store
+        if (currentTrackIndex > 0) {
+          webamp.setTracksToPlay([currentTrackIndex]);
+        }
+        if (playState === 'playing') {
+          webamp.play();
+        }
+        webamp.setVolume(volume);
+
+        // Listen to Webamp events and update store
+        webamp.onTrackDidChange((track) => {
+          if (track && typeof track === 'number') {
+            musicSetTrack(track);
+          }
+        });
+
+        webamp.onWillClose(() => {
+          logger.log('Webamp closing');
+          musicPause();
+        });
+
       }).catch((error) => {
         logger.error('Failed to render:', error);
       });
@@ -387,10 +483,21 @@ function DesktopMusicPlayer() {
     return () => {
       if (webampRef.current) {
         logger.log('Disposing');
+        // Save current state before disposing
+        try {
+          const webamp = webampRef.current;
+          const currentTime = webamp.timeElapsed();
+          if (currentTime !== null) {
+            musicUpdateTime(currentTime);
+          }
+        } catch (err) {
+          logger.error('Error saving state:', err);
+        }
         webampRef.current.dispose();
         webampRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
