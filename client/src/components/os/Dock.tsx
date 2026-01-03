@@ -118,7 +118,7 @@ export function Dock() {
     <nav
       className={cn(
         "fixed left-0 right-0 flex justify-center z-50 pointer-events-none",
-        isMobile ? "bottom-2" : "bottom-4"
+        isMobile ? "bottom-[calc(0.5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(1rem+env(safe-area-inset-bottom))]"
       )}
       aria-label="Application dock"
     >
@@ -128,8 +128,8 @@ export function Dock() {
         className={cn(
           "flex items-end rounded-2xl pointer-events-auto transition-all duration-300",
           isMobile
-            ? "gap-1 px-2 pb-1 pt-2 overflow-x-auto max-w-[95vw] scrollbar-hide"
-            : "gap-3 px-4 pb-2 pt-3 mx-auto",
+            ? "gap-1 px-2 pb-[calc(0.25rem+env(safe-area-inset-bottom))] pt-2 overflow-x-auto max-w-[95vw] scrollbar-hide"
+            : "gap-3 px-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-3 mx-auto",
           !isDark && "bg-[#EAD477]/40 backdrop-blur-xl border border-[#D99D3C]/30 shadow-lg",
           isDark && "bg-black/40 backdrop-blur-xl border border-blue-500/20 shadow-[0_0_30px_rgba(0,0,0,0.5)]"
         )}

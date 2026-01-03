@@ -3,6 +3,7 @@ import { MenuBar } from './MenuBar';
 import { Dock } from './Dock';
 import { Window } from './Window';
 import { MiniMusicPlayer } from '../MiniMusicPlayer';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { cn } from '@/lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -47,7 +48,7 @@ interface DesktopProps {
 }
 
 export function Desktop({ onEasterEgg }: DesktopProps) {
-  const { theme, windows, openWindow, uiZoom, reduceMotion, mobileActiveApp, openMobileApp } = useOSStore();
+  const { theme, windows, openWindow, closeWindow, uiZoom, reduceMotion, mobileActiveApp, openMobileApp } = useOSStore();
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
 
@@ -202,16 +203,56 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
       {/* Windows Layer */}
       <div className="absolute inset-0 pointer-events-none">
         <AnimatePresence>
-          <Window key="finder" id="finder"><Finder /></Window>
-          <Window key="gallery" id="gallery"><Gallery /></Window>
-          <Window key="mail" id="mail"><Mail /></Window>
-          <Window key="music" id="music"><MusicPlayer /></Window>
-          <Window key="video" id="video"><VideoPlayer /></Window>
-          <Window key="paint" id="paint"><Paint /></Window>
-          <Window key="notes" id="notes"><Notes onEasterEgg={onEasterEgg} /></Window>
-          <Window key="bookshelf" id="bookshelf"><Bookshelf /></Window>
-          <Window key="kalimba" id="kalimba"><Kalimba /></Window>
-          <Window key="linkedin" id="linkedin"><LinkedIn /></Window>
+          <Window key="finder" id="finder">
+            <ErrorBoundary appName="Finder" onClose={() => closeWindow('finder')}>
+              <Finder />
+            </ErrorBoundary>
+          </Window>
+          <Window key="gallery" id="gallery">
+            <ErrorBoundary appName="Gallery" onClose={() => closeWindow('gallery')}>
+              <Gallery />
+            </ErrorBoundary>
+          </Window>
+          <Window key="mail" id="mail">
+            <ErrorBoundary appName="Mail" onClose={() => closeWindow('mail')}>
+              <Mail />
+            </ErrorBoundary>
+          </Window>
+          <Window key="music" id="music">
+            <ErrorBoundary appName="Music" onClose={() => closeWindow('music')}>
+              <MusicPlayer />
+            </ErrorBoundary>
+          </Window>
+          <Window key="video" id="video">
+            <ErrorBoundary appName="Videos" onClose={() => closeWindow('video')}>
+              <VideoPlayer />
+            </ErrorBoundary>
+          </Window>
+          <Window key="paint" id="paint">
+            <ErrorBoundary appName="Paint" onClose={() => closeWindow('paint')}>
+              <Paint />
+            </ErrorBoundary>
+          </Window>
+          <Window key="notes" id="notes">
+            <ErrorBoundary appName="Notes" onClose={() => closeWindow('notes')}>
+              <Notes onEasterEgg={onEasterEgg} />
+            </ErrorBoundary>
+          </Window>
+          <Window key="bookshelf" id="bookshelf">
+            <ErrorBoundary appName="AI Resources" onClose={() => closeWindow('bookshelf')}>
+              <Bookshelf />
+            </ErrorBoundary>
+          </Window>
+          <Window key="kalimba" id="kalimba">
+            <ErrorBoundary appName="Kalimba" onClose={() => closeWindow('kalimba')}>
+              <Kalimba />
+            </ErrorBoundary>
+          </Window>
+          <Window key="linkedin" id="linkedin">
+            <ErrorBoundary appName="LinkedIn" onClose={() => closeWindow('linkedin')}>
+              <LinkedIn />
+            </ErrorBoundary>
+          </Window>
         </AnimatePresence>
       </div>
 
