@@ -99,6 +99,7 @@ export function Window({ id, children }: WindowProps) {
         {/* Mobile Header */}
         <div className={cn(
           "h-12 flex items-center px-4 shrink-0 border-b relative",
+          "pt-[env(safe-area-inset-top)]",
           !isDark && "bg-[#EAD477] border-[#D99D3C]/30",
           isDark && "bg-[#1a1a1a] border-gray-800"
         )}>
@@ -183,37 +184,43 @@ export function Window({ id, children }: WindowProps) {
             onDoubleClick={() => {}}
           >
             {/* Traffic Lights */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" role="group" aria-label="Window controls">
               <button
                 onClick={(e) => { e.stopPropagation(); closeWindow(id); }}
+                aria-label={`Close ${windowState.title}`}
                 className={cn(
                   "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
+                  "focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-red-500 focus-visible:outline-none",
                   !isDark && "bg-[#ff5f56] border border-[#e0443e] hover:brightness-90",
                   isDark && "bg-transparent border border-red-500 hover:bg-red-500/20 text-red-500"
                 )}
               >
-                <X className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
+                <X className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} aria-hidden="true" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); minimizeWindow(id); }}
+                aria-label={`Minimize ${windowState.title}`}
                 className={cn(
                   "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
+                  "focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-yellow-500 focus-visible:outline-none",
                   !isDark && "bg-[#ffbd2e] border border-[#dea123] hover:brightness-90",
                   isDark && "bg-transparent border border-yellow-500 hover:bg-yellow-500/20 text-yellow-500"
                 )}
               >
-                <Minus className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
+                <Minus className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} aria-hidden="true" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); toggleFullscreen(id); }}
+                aria-label={windowState.isFullscreen ? `Exit fullscreen ${windowState.title}` : `Fullscreen ${windowState.title}`}
                 className={cn(
                   "w-3 h-3 rounded-full flex items-center justify-center group transition-all",
+                  "focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-green-500 focus-visible:outline-none",
                   !isDark && "bg-[#27c93f] border border-[#1aab29] hover:brightness-90",
                   isDark && "bg-transparent border border-green-500 hover:bg-green-500/20 text-green-500"
                 )}
                 data-testid="button-fullscreen"
               >
-                <Maximize2 className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} />
+                <Maximize2 className={cn("w-2 h-2 opacity-0 group-hover:opacity-100", !isDark && "text-black/50")} aria-hidden="true" />
               </button>
             </div>
 

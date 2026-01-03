@@ -3,10 +3,22 @@ import { useOSStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Eraser, Pencil, MousePointer, Download, Trash2 } from 'lucide-react';
 
+const colorNames: Record<string, string> = {
+  '#000000': 'Black',
+  '#787c7e': 'Gray',
+  '#ff0000': 'Red',
+  '#ff8800': 'Orange',
+  '#ffff00': 'Yellow',
+  '#00ff00': 'Green',
+  '#0000ff': 'Blue',
+  '#8800ff': 'Purple',
+  '#ff00ff': 'Magenta'
+};
+
 export function Paint() {
   const { theme } = useOSStore();
   const isDark = theme === 'dark';
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [color, setColor] = useState('#000000');
   const [tool, setTool] = useState<'pencil' | 'eraser'>('pencil');
@@ -49,17 +61,35 @@ export function Paint() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     const pos = getPosition(e);
     ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : color;
-    ctx.lineWidth = tool === 'eraser' ? 20 : lineWidth;
+
+    // Configure drawing based on tool
+    if (tool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = 'rgba(0,0,0,1)'; // Color doesn't matter for eraser
+      ctx.lineWidth = 20;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+    }
+
     ctx.lineCap = 'round';
     ctx.stroke();
   };
 
   const stopDrawing = () => {
     setIsDrawing(false);
+    // Reset composite operation when done drawing
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
   };
 
   const clearCanvas = () => {
@@ -67,6 +97,7 @@ export function Paint() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (ctx) {
+      ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -85,35 +116,52 @@ export function Paint() {
   return (
     <div className="h-full flex flex-col bg-[#c0c0c0]">
       {/* Toolbar */}
-      <div className={cn(
-        "p-2 flex items-center gap-4 border-b shrink-0",
-        !isDark && "bg-[#f0f0f0] border-gray-300",
-        isDark && "bg-[#2d2d2d] border-black text-white"
-      )}>
-        <div className="flex bg-white/10 rounded p-1 gap-1 border border-black/10">
-          <button 
+      <div
+        className={cn(
+          "p-2 flex items-center gap-4 border-b shrink-0",
+          !isDark && "bg-[#f0f0f0] border-gray-300",
+          isDark && "bg-[#2d2d2d] border-black text-white"
+        )}
+        role="toolbar"
+        aria-label="Drawing tools"
+      >
+        <div className="flex bg-white/10 rounded p-1 gap-1 border border-black/10" role="group" aria-label="Tool selection">
+          <button
             onClick={() => setTool('pencil')}
-            className={cn("p-1.5 rounded hover:bg-black/10", tool === 'pencil' && "bg-blue-200")}
+            aria-label="Pencil tool"
+            aria-pressed={tool === 'pencil'}
+            className={cn(
+              "p-1.5 rounded hover:bg-black/10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none",
+              tool === 'pencil' && "bg-blue-200"
+            )}
           >
-            <Pencil className="w-4 h-4" />
+            <Pencil className="w-4 h-4" aria-hidden="true" />
           </button>
-          <button 
+          <button
             onClick={() => setTool('eraser')}
-            className={cn("p-1.5 rounded hover:bg-black/10", tool === 'eraser' && "bg-blue-200")}
+            aria-label="Eraser tool"
+            aria-pressed={tool === 'eraser'}
+            className={cn(
+              "p-1.5 rounded hover:bg-black/10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none",
+              tool === 'eraser' && "bg-blue-200"
+            )}
           >
-            <Eraser className="w-4 h-4" />
+            <Eraser className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="w-px h-8 bg-black/10" />
+        <div className="w-px h-8 bg-black/10" aria-hidden="true" />
 
-        <div className="flex flex-wrap gap-1 max-w-[120px]">
+        <div className="flex flex-wrap gap-1 max-w-[120px]" role="group" aria-label="Color palette">
           {colors.map(c => (
             <button
               key={c}
               onClick={() => { setColor(c); setTool('pencil'); }}
+              aria-label={`${colorNames[c]} color`}
+              aria-pressed={color === c && tool !== 'eraser'}
               className={cn(
-                "w-5 h-5 border border-black/20 hover:scale-110 transition-transform",
+                "w-5 h-5 border border-black/20 hover:scale-110 transition-transform rounded-sm",
+                "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none",
                 color === c && tool !== 'eraser' && "ring-2 ring-blue-500 z-10"
               )}
               style={{ backgroundColor: c }}
@@ -122,8 +170,12 @@ export function Paint() {
         </div>
 
         <div className="ml-auto flex gap-2">
-          <button onClick={clearCanvas} className="p-2 hover:bg-red-100 rounded text-red-600" title="Clear">
-            <Trash2 className="w-4 h-4" />
+          <button
+            onClick={clearCanvas}
+            aria-label="Clear canvas"
+            className="p-2 hover:bg-red-100 rounded text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"
+          >
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -135,6 +187,8 @@ export function Paint() {
           width={800}
           height={600}
           className="bg-white shadow-lg max-w-full max-h-full touch-none"
+          aria-label="Drawing canvas"
+          role="img"
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}

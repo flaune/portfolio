@@ -3,6 +3,7 @@ import { MenuBar } from './MenuBar';
 import { Dock } from './Dock';
 import { Window } from './Window';
 import { MiniMusicPlayer } from '../MiniMusicPlayer';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { cn } from '@/lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -47,7 +48,7 @@ interface DesktopProps {
 }
 
 export function Desktop({ onEasterEgg }: DesktopProps) {
-  const { theme, windows, openWindow, uiZoom, reduceMotion, mobileActiveApp, openMobileApp } = useOSStore();
+  const { theme, windows, openWindow, closeWindow, uiZoom, reduceMotion, mobileActiveApp, openMobileApp } = useOSStore();
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
 
@@ -95,15 +96,21 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
       
       {/* Mobile App Grid - shown when no app is active */}
       {isMobile && !mobileActiveApp && (
-        <div className="absolute inset-0 top-8 flex items-center justify-center p-6">
-          <div className="grid grid-cols-4 gap-4 max-w-sm">
+        <div className="absolute inset-0 top-8 flex items-center justify-center px-6 pb-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">
+          <div className="grid grid-cols-4 gap-4 max-w-sm" role="grid" aria-label="Applications">
             {mobileApps.map((app) => {
               const Icon = app.icon;
               return (
                 <button
                   key={app.id}
                   onClick={() => handleAppClick(app)}
-                  className="flex flex-col items-center gap-1 p-2 active:scale-95 transition-transform"
+                  aria-label={app.external ? `${app.label} (opens in new tab)` : `Open ${app.label}`}
+                  className={cn(
+                    "flex flex-col items-center gap-1 p-2 active:scale-95 transition-transform rounded-lg",
+                    "focus-visible:ring-2 focus-visible:outline-none",
+                    !isDark && "focus-visible:ring-[#D99D3C]",
+                    isDark && "focus-visible:ring-blue-400"
+                  )}
                   data-testid={`mobile-app-${app.id}`}
                 >
                   <div className={cn(
@@ -111,11 +118,14 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
                     !isDark && "bg-gradient-to-br from-[#EAD477] to-[#D99D3C] border border-[#D99D3C]/50",
                     isDark && "bg-blue-900/50 border border-blue-400/50 shadow-[0_0_15px_rgba(0,100,255,0.4)]"
                   )}>
-                    <Icon className={cn(
-                      "w-7 h-7",
-                      !isDark && "text-[#2C2C2C]",
-                      isDark && "text-blue-300"
-                    )} />
+                    <Icon
+                      className={cn(
+                        "w-7 h-7",
+                        !isDark && "text-[#2C2C2C]",
+                        isDark && "text-blue-300"
+                      )}
+                      aria-hidden="true"
+                    />
                   </div>
                   <span className={cn(
                     "text-xs font-medium text-center",
@@ -134,9 +144,15 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
       {/* Desktop Icons Area - hidden on mobile */}
       {!isMobile && (
         <div className="absolute top-10 right-4 flex flex-col items-end gap-6 p-4">
-          <button 
+          <button
             onClick={() => openWindow('gallery')}
-            className="group flex flex-col items-center gap-1 w-20"
+            aria-label="Open My Portfolio"
+            className={cn(
+              "group flex flex-col items-center gap-1 w-20 rounded-lg p-1",
+              "focus-visible:ring-2 focus-visible:outline-none",
+              !isDark && "focus-visible:ring-[#D99D3C]",
+              isDark && "focus-visible:ring-blue-400"
+            )}
             data-testid="desktop-icon-portfolio"
           >
             <div className={cn(
@@ -144,7 +160,7 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
               !isDark && "bg-gradient-to-br from-[#EAD477] to-[#D99D3C] border border-[#D99D3C]/50",
               isDark && "bg-blue-900/50 border border-blue-400/50 shadow-[0_0_15px_rgba(0,100,255,0.4)]"
             )}>
-              <span className="text-3xl">📂</span>
+              <span className="text-3xl" role="img" aria-label="Folder icon">📂</span>
             </div>
             <span className={cn(
               "text-xs font-medium px-2 py-0.5 rounded",
@@ -155,9 +171,15 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
             </span>
           </button>
 
-          <button 
+          <button
             onClick={() => window.open('https://www.mikanra.com/', '_blank')}
-            className="group flex flex-col items-center gap-1 w-20"
+            aria-label="Mikanra (opens in new tab)"
+            className={cn(
+              "group flex flex-col items-center gap-1 w-20 rounded-lg p-1",
+              "focus-visible:ring-2 focus-visible:outline-none",
+              !isDark && "focus-visible:ring-[#D99D3C]",
+              isDark && "focus-visible:ring-blue-400"
+            )}
             data-testid="desktop-icon-mikanra"
           >
             <div className={cn(
@@ -165,7 +187,7 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
               !isDark && "bg-gradient-to-br from-[#EAD477] to-[#D99D3C] border border-[#D99D3C]/50",
               isDark && "bg-blue-900/50 border border-blue-400/50 shadow-[0_0_15px_rgba(0,100,255,0.4)]"
             )}>
-              <MikanraIcon className="w-10 h-10" isDark={isDark} />
+              <MikanraIcon className="w-10 h-10" isDark={isDark} aria-hidden="true" />
             </div>
             <span className={cn(
               "text-xs font-medium px-2 py-0.5 rounded",
@@ -181,16 +203,56 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
       {/* Windows Layer */}
       <div className="absolute inset-0 pointer-events-none">
         <AnimatePresence>
-          <Window key="finder" id="finder"><Finder /></Window>
-          <Window key="gallery" id="gallery"><Gallery /></Window>
-          <Window key="mail" id="mail"><Mail /></Window>
-          <Window key="music" id="music"><MusicPlayer /></Window>
-          <Window key="video" id="video"><VideoPlayer /></Window>
-          <Window key="paint" id="paint"><Paint /></Window>
-          <Window key="notes" id="notes"><Notes onEasterEgg={onEasterEgg} /></Window>
-          <Window key="bookshelf" id="bookshelf"><Bookshelf /></Window>
-          <Window key="kalimba" id="kalimba"><Kalimba /></Window>
-          <Window key="linkedin" id="linkedin"><LinkedIn /></Window>
+          <Window key="finder" id="finder">
+            <ErrorBoundary appName="Finder" onClose={() => closeWindow('finder')}>
+              <Finder />
+            </ErrorBoundary>
+          </Window>
+          <Window key="gallery" id="gallery">
+            <ErrorBoundary appName="Gallery" onClose={() => closeWindow('gallery')}>
+              <Gallery />
+            </ErrorBoundary>
+          </Window>
+          <Window key="mail" id="mail">
+            <ErrorBoundary appName="Mail" onClose={() => closeWindow('mail')}>
+              <Mail />
+            </ErrorBoundary>
+          </Window>
+          <Window key="music" id="music">
+            <ErrorBoundary appName="Music" onClose={() => closeWindow('music')}>
+              <MusicPlayer />
+            </ErrorBoundary>
+          </Window>
+          <Window key="video" id="video">
+            <ErrorBoundary appName="Videos" onClose={() => closeWindow('video')}>
+              <VideoPlayer />
+            </ErrorBoundary>
+          </Window>
+          <Window key="paint" id="paint">
+            <ErrorBoundary appName="Paint" onClose={() => closeWindow('paint')}>
+              <Paint />
+            </ErrorBoundary>
+          </Window>
+          <Window key="notes" id="notes">
+            <ErrorBoundary appName="Notes" onClose={() => closeWindow('notes')}>
+              <Notes onEasterEgg={onEasterEgg} />
+            </ErrorBoundary>
+          </Window>
+          <Window key="bookshelf" id="bookshelf">
+            <ErrorBoundary appName="AI Resources" onClose={() => closeWindow('bookshelf')}>
+              <Bookshelf />
+            </ErrorBoundary>
+          </Window>
+          <Window key="kalimba" id="kalimba">
+            <ErrorBoundary appName="Kalimba" onClose={() => closeWindow('kalimba')}>
+              <Kalimba />
+            </ErrorBoundary>
+          </Window>
+          <Window key="linkedin" id="linkedin">
+            <ErrorBoundary appName="LinkedIn" onClose={() => closeWindow('linkedin')}>
+              <LinkedIn />
+            </ErrorBoundary>
+          </Window>
         </AnimatePresence>
       </div>
 

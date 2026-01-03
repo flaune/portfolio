@@ -177,6 +177,7 @@ export function MenuBar() {
       <HelpModal />
       <div className={cn(
         "h-7 w-full flex items-center justify-between px-4 select-none z-50 transition-colors duration-300",
+        "pt-[env(safe-area-inset-top)]",
         !isDark && "bg-[#EAD477] shadow-sm border-b border-[#D99D3C]/30 text-[#2C2C2C]",
         isDark && "bg-black/80 backdrop-blur border-b border-blue-500/20 text-white"
       )}>
