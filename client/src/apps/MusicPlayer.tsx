@@ -34,10 +34,8 @@ const tracks: Track[] = [
   },
 ];
 
-// Mobile-friendly audio player component
+// Mobile-friendly audio player component with VLC-inspired design
 function MobileMusicPlayer() {
-  const audioRef = useRef<HTMLAudioElement>(null);
-
   // Use shared store state
   const {
     music,
@@ -46,83 +44,20 @@ function MobileMusicPlayer() {
     musicNext,
     musicPrev,
     musicUpdateTime,
-    musicSetDuration,
     musicSetVolume,
-    setMusicTracks
+    setMusicTracks,
+    theme
   } = useOSStore();
 
   const { currentTrackIndex, playState, currentTime, duration, volume } = music;
   const currentTrack = tracks[currentTrackIndex];
   const isPlaying = playState === 'playing';
+  const isDark = theme === 'dark';
 
   // Initialize tracks in store on mount
   useEffect(() => {
     setMusicTracks(tracks);
   }, [setMusicTracks]);
-
-  // Sync audio element with store state
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateTime = () => musicUpdateTime(audio.currentTime);
-    const updateDuration = () => {
-      if (audio.duration && !isNaN(audio.duration)) {
-        musicSetDuration(audio.duration);
-      }
-    };
-    const handleEnded = () => {
-      // Auto-play next track
-      if (currentTrackIndex < tracks.length - 1) {
-        musicNext();
-      } else {
-        musicPause();
-      }
-    };
-
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('ended', handleEnded);
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('ended', handleEnded);
-    };
-  }, [currentTrackIndex, musicUpdateTime, musicSetDuration, musicNext, musicPause]);
-
-  // Handle playback state changes
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (isPlaying) {
-      audio.play().catch(err => {
-        logger.error('Failed to play:', err);
-        musicPause();
-      });
-    } else {
-      audio.pause();
-    }
-  }, [isPlaying, currentTrackIndex, musicPause]);
-
-  // Sync volume
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume / 100;
-    }
-  }, [volume]);
-
-  // Sync current time when changed externally (e.g., from store)
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    // Only update if significantly different (avoid feedback loop)
-    if (Math.abs(audio.currentTime - currentTime) > 0.5) {
-      audio.currentTime = currentTime;
-    }
-  }, [currentTime]);
 
   const togglePlayPause = () => {
     if (isPlaying) {
@@ -135,25 +70,22 @@ function MobileMusicPlayer() {
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value);
     musicUpdateTime(newTime);
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-    }
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    musicSetVolume(parseFloat(e.target.value) * 100);
+    musicSetVolume(parseFloat(e.target.value));
   };
 
   const playNext = () => {
-    if (currentTrackIndex < tracks.length - 1) {
-      musicNext();
+    musicNext();
+    if (playState !== 'stopped') {
       musicPlay();
     }
   };
 
   const playPrevious = () => {
-    if (currentTrackIndex > 0) {
-      musicPrev();
+    musicPrev();
+    if (playState !== 'stopped') {
       musicPlay();
     }
   };
@@ -165,213 +97,315 @@ function MobileMusicPlayer() {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   return (
-    <div className="mobile-music-player">
-      <audio ref={audioRef} src={currentTrack.url} preload="metadata" />
+    <div className={`vlc-music-player ${isDark ? 'dark' : 'light'}`}>
+      {/* Large Album Art Area */}
+      <div className="album-art">
+        <div className="album-art-placeholder">
+          <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="60" cy="60" r="55" stroke="currentColor" strokeWidth="2" opacity="0.3"/>
+            <circle cx="60" cy="60" r="8" fill="currentColor" opacity="0.3"/>
+            <path d="M60 15 L60 105 M15 60 L105 60" stroke="currentColor" strokeWidth="1" opacity="0.2"/>
+          </svg>
+        </div>
+      </div>
 
+      {/* Track Info */}
       <div className="track-info">
-        <div className="track-name">{currentTrack.title}</div>
-        <div className="track-counter">{currentTrackIndex + 1} / {tracks.length}</div>
+        <h2 className="track-title">{currentTrack.title}</h2>
+        <p className="track-meta">Track {currentTrackIndex + 1} of {tracks.length}</p>
       </div>
 
-      <div className="progress-container">
-        <span className="time-display">{formatTime(currentTime)}</span>
-        <input
-          type="range"
-          className="progress-bar"
-          min="0"
-          max={duration || 0}
-          value={currentTime}
-          onChange={handleProgressChange}
-          step="0.1"
-        />
-        <span className="time-display">{formatTime(duration)}</span>
+      {/* Progress Bar */}
+      <div className="progress-section">
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${progress}%` }} />
+          <input
+            type="range"
+            className="progress-input"
+            min="0"
+            max={duration || 0}
+            value={currentTime}
+            onChange={handleProgressChange}
+            step="0.1"
+          />
+        </div>
+        <div className="time-info">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
       </div>
 
+      {/* Playback Controls */}
       <div className="controls">
         <button
           onClick={playPrevious}
-          disabled={currentTrackIndex === 0}
           className="control-btn"
           aria-label="Previous track"
         >
-          ⏮
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"/>
+          </svg>
         </button>
         <button
           onClick={togglePlayPause}
-          className="control-btn play-pause-btn"
+          className="control-btn play-btn"
           aria-label={isPlaying ? 'Pause' : 'Play'}
         >
-          {isPlaying ? '⏸' : '▶'}
+          {isPlaying ? (
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+            </svg>
+          ) : (
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          )}
         </button>
         <button
           onClick={playNext}
-          disabled={currentTrackIndex === tracks.length - 1}
           className="control-btn"
           aria-label="Next track"
         >
-          ⏭
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+          </svg>
         </button>
       </div>
 
-      <div className="volume-container">
-        <span className="volume-icon">🔊</span>
+      {/* Volume Control */}
+      <div className="volume-section">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="volume-icon">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+        </svg>
         <input
           type="range"
           className="volume-slider"
           min="0"
-          max="1"
-          step="0.01"
-          value={volume / 100}
+          max="100"
+          step="1"
+          value={volume}
           onChange={handleVolumeChange}
           aria-label="Volume"
         />
-        <span className="volume-percentage">{Math.round(volume)}%</span>
+        <span className="volume-value">{Math.round(volume)}%</span>
       </div>
 
       <style>{`
-        .mobile-music-player {
-          width: 100%;
-          max-width: 400px;
-          margin: 0 auto;
-          padding: 24px;
-          background: var(--background);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          font-family: system-ui, -apple-system, sans-serif;
+        .vlc-music-player {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100%;
+          padding: 40px 24px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
+        .vlc-music-player.light {
+          background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+          color: #1a1a1a;
+        }
+
+        .vlc-music-player.dark {
+          background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+          color: #ffffff;
+        }
+
+        /* Album Art */
+        .album-art {
+          margin-bottom: 32px;
+        }
+
+        .album-art-placeholder {
+          width: 200px;
+          height: 200px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .light .album-art-placeholder {
+          background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
+          color: #666;
+        }
+
+        .dark .album-art-placeholder {
+          background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+          color: #888;
+        }
+
+        /* Track Info */
         .track-info {
           text-align: center;
-          margin-bottom: 20px;
+          margin-bottom: 32px;
+          max-width: 90%;
         }
 
-        .track-name {
-          font-size: 16px;
+        .track-title {
+          font-size: 20px;
           font-weight: 600;
-          color: var(--foreground);
-          margin-bottom: 4px;
+          margin: 0 0 8px 0;
+          line-height: 1.3;
         }
 
-        .track-counter {
-          font-size: 12px;
-          color: var(--muted-foreground);
+        .track-meta {
+          font-size: 14px;
+          margin: 0;
+          opacity: 0.6;
         }
 
-        .progress-container {
+        /* Progress Section */
+        .progress-section {
+          width: 100%;
+          max-width: 400px;
+          margin-bottom: 32px;
+        }
+
+        .progress-track {
+          position: relative;
+          height: 4px;
+          border-radius: 2px;
+          margin-bottom: 8px;
+          overflow: hidden;
+        }
+
+        .light .progress-track {
+          background: #e0e0e0;
+        }
+
+        .dark .progress-track {
+          background: #333;
+        }
+
+        .progress-fill {
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          border-radius: 2px;
+          transition: width 0.1s linear;
+        }
+
+        .light .progress-fill {
+          background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
+        }
+
+        .dark .progress-fill {
+          background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
+        }
+
+        .progress-input {
+          position: absolute;
+          top: -6px;
+          left: 0;
+          width: 100%;
+          height: 16px;
+          opacity: 0;
+          cursor: pointer;
+          z-index: 10;
+        }
+
+        .time-info {
           display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 20px;
-        }
-
-        .time-display {
+          justify-content: space-between;
           font-size: 12px;
-          color: var(--muted-foreground);
-          min-width: 40px;
-          text-align: center;
+          opacity: 0.6;
         }
 
-        .progress-bar {
-          flex: 1;
-          height: 6px;
-          border-radius: 3px;
-          appearance: none;
-          background: var(--secondary);
-          outline: none;
-        }
-
-        .progress-bar::-webkit-slider-thumb {
-          appearance: none;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: var(--primary);
-          cursor: pointer;
-          transition: transform 0.2s;
-        }
-
-        .progress-bar::-webkit-slider-thumb:hover {
-          transform: scale(1.2);
-        }
-
-        .progress-bar::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: var(--primary);
-          cursor: pointer;
-          border: none;
-          transition: transform 0.2s;
-        }
-
-        .progress-bar::-moz-range-thumb:hover {
-          transform: scale(1.2);
-        }
-
+        /* Controls */
         .controls {
           display: flex;
-          justify-content: center;
           align-items: center;
-          gap: 16px;
-          margin-bottom: 20px;
+          gap: 24px;
+          margin-bottom: 40px;
         }
 
         .control-btn {
-          background: var(--secondary);
+          background: none;
           border: none;
+          padding: 12px;
+          cursor: pointer;
           border-radius: 50%;
-          width: 48px;
-          height: 48px;
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
-          font-size: 20px;
-          transition: all 0.2s;
-          color: var(--foreground);
+          transition: all 0.2s ease;
         }
 
-        .control-btn:hover:not(:disabled) {
-          background: var(--accent);
-          transform: scale(1.05);
+        .light .control-btn {
+          color: #333;
         }
 
-        .control-btn:active:not(:disabled) {
+        .dark .control-btn {
+          color: #fff;
+        }
+
+        .light .control-btn:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .control-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .control-btn:active {
           transform: scale(0.95);
         }
 
-        .control-btn:disabled {
-          opacity: 0.3;
-          cursor: not-allowed;
+        .play-btn {
+          padding: 16px;
         }
 
-        .play-pause-btn {
-          width: 56px;
-          height: 56px;
-          background: var(--primary);
-          color: var(--primary-foreground);
-          font-size: 24px;
+        .light .play-btn {
+          background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
         }
 
-        .volume-container {
+        .dark .play-btn {
+          background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        .play-btn:hover {
+          transform: scale(1.05);
+        }
+
+        /* Volume Section */
+        .volume-section {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 12px;
+          width: 100%;
+          max-width: 300px;
         }
 
         .volume-icon {
-          font-size: 18px;
+          opacity: 0.6;
+          flex-shrink: 0;
         }
 
         .volume-slider {
           flex: 1;
-          height: 6px;
-          border-radius: 3px;
+          height: 4px;
+          border-radius: 2px;
           appearance: none;
-          background: var(--secondary);
           outline: none;
+          cursor: pointer;
+        }
+
+        .light .volume-slider {
+          background: #e0e0e0;
+        }
+
+        .dark .volume-slider {
+          background: #333;
         }
 
         .volume-slider::-webkit-slider-thumb {
@@ -379,30 +413,34 @@ function MobileMusicPlayer() {
           width: 14px;
           height: 14px;
           border-radius: 50%;
-          background: var(--primary);
+          background: #ff6b35;
           cursor: pointer;
+          transition: transform 0.2s;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
         }
 
         .volume-slider::-moz-range-thumb {
           width: 14px;
           height: 14px;
           border-radius: 50%;
-          background: var(--primary);
+          background: #ff6b35;
           cursor: pointer;
           border: none;
+          transition: transform 0.2s;
         }
 
-        .volume-percentage {
+        .volume-slider::-moz-range-thumb:hover {
+          transform: scale(1.2);
+        }
+
+        .volume-value {
           font-size: 12px;
-          color: var(--muted-foreground);
+          opacity: 0.6;
           min-width: 40px;
           text-align: right;
-        }
-
-        @media (prefers-color-scheme: dark) {
-          .mobile-music-player {
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-          }
         }
       `}</style>
     </div>
