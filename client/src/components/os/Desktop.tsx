@@ -3,6 +3,7 @@ import { MenuBar } from './MenuBar';
 import { Dock } from './Dock';
 import { Window } from './Window';
 import { MiniMusicPlayer } from '../MiniMusicPlayer';
+import { PersistentAudioPlayer } from '../PersistentAudioPlayer';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { cn } from '@/lib/utils';
 import { AnimatePresence } from 'framer-motion';
@@ -258,7 +259,10 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
 
       {/* Dock - hidden on mobile */}
       {!isMobile && <Dock />}
-      
+
+      {/* Persistent Audio Player - always mounted on mobile */}
+      {isMobile && <PersistentAudioPlayer />}
+
       {/* Mini Music Player - mobile only */}
       {isMobile && <MiniMusicPlayer />}
     </div>
