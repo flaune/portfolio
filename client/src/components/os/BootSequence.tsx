@@ -145,7 +145,7 @@ export function BootSequence({ onComplete, variant = 'default' }: BootSequencePr
                 className="h-full relative"
               >
                 {/* Main bar with gradient */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-300 to-blue-400" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-white to-white" />
 
                 {/* Bright glow when loading is complete */}
                 {loadingProgress === 100 && (
@@ -153,12 +153,12 @@ export function BootSequence({ onComplete, variant = 'default' }: BootSequencePr
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.4 }}
-                    className="absolute inset-0 bg-blue-300 shadow-[0_0_20px_rgba(147,197,253,0.8)]"
+                    className="absolute inset-0 bg-white shadow-[0_0_20px_rgba(255,255,255,0.8)]"
                   />
                 )}
 
                 {/* Always-on subtle glow */}
-                <div className="absolute inset-0 shadow-[0_0_10px_rgba(96,165,250,0.6)]" />
+                <div className="absolute inset-0 shadow-[0_0_10px_rgba(255,255,255,0.6)]" />
               </motion.div>
             </div>
           </motion.div>
