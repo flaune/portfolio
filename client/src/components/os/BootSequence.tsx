@@ -26,6 +26,7 @@ const mewAsciiArt = [
 
 export function BootSequence({ onComplete, variant = 'default' }: BootSequenceProps) {
   const [phase, setPhase] = useState<'intro' | 'fadeout'>('intro');
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
     if (variant === 'mew') {
@@ -35,6 +36,19 @@ export function BootSequence({ onComplete, variant = 'default' }: BootSequencePr
       }, 4000);
       return () => clearTimeout(timer);
     }
+
+    // Animate loading bar progress
+    const progressInterval = setInterval(() => {
+      setLoadingProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        // Progress faster initially, then slow down (more realistic loading feel)
+        const increment = prev < 60 ? 8 : prev < 90 ? 3 : 1;
+        return Math.min(prev + increment, 100);
+      });
+    }, 80);
 
     // Default PSP-style cinematic intro
     const fadeOutTimer = setTimeout(() => {
@@ -46,6 +60,7 @@ export function BootSequence({ onComplete, variant = 'default' }: BootSequencePr
     }, 3000);
 
     return () => {
+      clearInterval(progressInterval);
       clearTimeout(fadeOutTimer);
       clearTimeout(completeTimer);
     };
@@ -85,9 +100,9 @@ export function BootSequence({ onComplete, variant = 'default' }: BootSequencePr
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 1, backgroundColor: '#000000' }}
-      animate={{ 
+      animate={{
         opacity: phase === 'fadeout' ? 0 : 1,
         backgroundColor: '#000000'
       }}
@@ -98,28 +113,54 @@ export function BootSequence({ onComplete, variant = 'default' }: BootSequencePr
         {phase === 'intro' && (
           <motion.div
             initial={{ opacity: 0, scale: 1 }}
-            animate={{ opacity: 0.6, scale: 1 }}
+            animate={{ opacity: 0.7, scale: 1 }}
             exit={{ opacity: 0, scale: 1 }}
-            transition={{ 
-              duration: 2, 
+            transition={{
+              duration: 2,
               ease: "easeInOut"
             }}
-            className="relative"
+            className="relative flex flex-col items-center"
           >
-            <h1 className="text-white/60 text-5xl sm:text-7xl font-light tracking-[0.4em] uppercase select-none">
+            <h1 className="text-white/70 text-5xl sm:text-7xl font-light tracking-[0.4em] uppercase select-none">
               bhach
             </h1>
-            
-            {/* Subtle glow - minimal intensity */}
-            <div className="absolute inset-0 bg-white/[0.02] blur-[60px] rounded-full -z-10" />
-            
-            {/* Underline animation - slightly more visible */}
+
+            {/* Brighter glow - 10% more intense */}
+            <div className="absolute inset-0 bg-white/[0.04] blur-[60px] rounded-full -z-10" />
+
+            {/* Underline animation - 10% brighter */}
             <motion.div
               initial={{ scaleX: 0, opacity: 0 }}
-              animate={{ scaleX: 1, opacity: 0.25 }}
+              animate={{ scaleX: 1, opacity: 0.35 }}
               transition={{ duration: 2, delay: 0.8, ease: "easeInOut" }}
-              className="absolute -bottom-4 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent origin-center"
+              className="absolute -bottom-4 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent origin-center"
             />
+
+            {/* Loading bar */}
+            <div className="mt-12 w-64 sm:w-80 h-1 bg-white/10 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: '0%' }}
+                animate={{ width: `${loadingProgress}%` }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="h-full relative"
+              >
+                {/* Main bar with gradient */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-300 to-blue-400" />
+
+                {/* Bright glow when loading is complete */}
+                {loadingProgress === 100 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4 }}
+                    className="absolute inset-0 bg-blue-300 shadow-[0_0_20px_rgba(147,197,253,0.8)]"
+                  />
+                )}
+
+                {/* Always-on subtle glow */}
+                <div className="absolute inset-0 shadow-[0_0_10px_rgba(96,165,250,0.6)]" />
+              </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
