@@ -15,8 +15,8 @@ type FileItem = {
 
 // Resume configuration - add your resume PDF to /public/pdfs folder
 const RESUME_CONFIG = {
-  url: "/pdfs/resume.pdf",
-  filename: "Resume.pdf" // The filename that will be used when downloading
+  url: "/pdfs/Bryan Hach Resume 2025.pdf",
+  filename: "Bryan_Hach_Resume_2025.pdf" // The filename that will be used when downloading
 };
 
 const caseStudies = [
@@ -29,7 +29,7 @@ const caseStudies = [
     tags: ["Platform Economics", "Content Strategy", "Growth"],
     icon: BookOpen,
     color: "from-green-500 to-emerald-600",
-    url: "/pdfs/webtoon-analysis.pdf"
+    url: "/pdfs/Webtoon Report - Bryan Hach 2025.pdf"
   },
   {
     id: 2,
@@ -40,7 +40,7 @@ const caseStudies = [
     tags: ["Platform Economics", "Gaming", "Market Strategy"],
     icon: Gamepad2,
     color: "from-blue-500 to-indigo-600",
-    url: "/pdfs/epic-games-analysis.pdf"
+    url: "/pdfs/Epic Games Report - Bryan Hach 2025.pdf"
   }
 ];
 
