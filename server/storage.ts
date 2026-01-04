@@ -1,5 +1,13 @@
-import { type User, type InsertUser } from "@shared/schema";
 import { randomUUID } from "crypto";
+
+// Local type definitions for in-memory storage
+export type User = {
+  id: string;
+  username: string;
+  password: string;
+};
+
+export type InsertUser = Pick<User, 'username' | 'password'>;
 
 // modify the interface with any CRUD methods
 // you might need
