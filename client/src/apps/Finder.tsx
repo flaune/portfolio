@@ -13,11 +13,9 @@ type FileItem = {
   content?: React.ReactNode;
 };
 
-// Resume configuration - add your resume PDF to /public folder and update this path
+// Resume configuration - add your resume PDF to /public/pdfs folder
 const RESUME_CONFIG = {
-  // Set this to your resume file path in the public folder
-  // Example: "/resume.pdf" or "/documents/YourName_Resume.pdf"
-  url: "/resume.pdf",
+  url: "/pdfs/resume.pdf",
   filename: "Resume.pdf" // The filename that will be used when downloading
 };
 
@@ -31,8 +29,7 @@ const caseStudies = [
     tags: ["Platform Economics", "Content Strategy", "Growth"],
     icon: BookOpen,
     color: "from-green-500 to-emerald-600",
-    // Add your external URL here (Medium, Notion, etc.)
-    url: ""
+    url: "/pdfs/webtoon-analysis.pdf"
   },
   {
     id: 2,
@@ -43,8 +40,7 @@ const caseStudies = [
     tags: ["Platform Economics", "Gaming", "Market Strategy"],
     icon: Gamepad2,
     color: "from-blue-500 to-indigo-600",
-    // Add your external URL here (Medium, Notion, etc.)
-    url: ""
+    url: "/pdfs/epic-games-analysis.pdf"
   }
 ];
 
