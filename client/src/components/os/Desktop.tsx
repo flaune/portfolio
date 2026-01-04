@@ -10,19 +10,19 @@ import { AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FolderOpen, Mail as MailIcon, Music, Video, Palette, StickyNote, BookOpen, Linkedin, Twitter, FileText, Image, Piano } from 'lucide-react';
 import { MikanraIcon } from '../icons/MikanraIcon';
-import { useMemo } from 'react';
+import { useMemo, lazy, Suspense } from 'react';
 
-// Apps
-import { Finder } from '@/apps/Finder';
-import { Gallery } from '@/apps/Gallery';
-import { Mail } from '@/apps/Mail';
-import { MusicPlayer } from '@/apps/MusicPlayer';
-import { VideoPlayer } from '@/apps/VideoPlayer';
-import { Paint } from '@/apps/Paint';
-import { Notes } from '@/apps/Notes';
-import { Bookshelf } from '@/apps/AiResources';
-import { LinkedIn } from '@/apps/LinkedIn';
-import { Kalimba } from '@/apps/Kalimba';
+// Lazy-loaded Apps for code-splitting
+const Finder = lazy(() => import('@/apps/Finder').then(m => ({ default: m.Finder })));
+const Gallery = lazy(() => import('@/apps/Gallery').then(m => ({ default: m.Gallery })));
+const Mail = lazy(() => import('@/apps/Mail').then(m => ({ default: m.Mail })));
+const MusicPlayer = lazy(() => import('@/apps/MusicPlayer').then(m => ({ default: m.MusicPlayer })));
+const VideoPlayer = lazy(() => import('@/apps/VideoPlayer').then(m => ({ default: m.VideoPlayer })));
+const Paint = lazy(() => import('@/apps/Paint').then(m => ({ default: m.Paint })));
+const Notes = lazy(() => import('@/apps/Notes').then(m => ({ default: m.Notes })));
+const Bookshelf = lazy(() => import('@/apps/AiResources').then(m => ({ default: m.Bookshelf })));
+const LinkedIn = lazy(() => import('@/apps/LinkedIn').then(m => ({ default: m.LinkedIn })));
+const Kalimba = lazy(() => import('@/apps/Kalimba').then(m => ({ default: m.Kalimba })));
 
 // Mobile app grid config
 const mobileApps: { id: AppId; icon: React.ElementType; label: string; external?: string }[] = [
@@ -206,52 +206,72 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
         <AnimatePresence>
           <Window key="finder" id="finder">
             <ErrorBoundary appName="Finder" onClose={() => closeWindow('finder')}>
-              <Finder />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <Finder />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="gallery" id="gallery">
             <ErrorBoundary appName="Gallery" onClose={() => closeWindow('gallery')}>
-              <Gallery />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <Gallery />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="mail" id="mail">
             <ErrorBoundary appName="Mail" onClose={() => closeWindow('mail')}>
-              <Mail />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <Mail />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="music" id="music">
             <ErrorBoundary appName="Music" onClose={() => closeWindow('music')}>
-              <MusicPlayer />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <MusicPlayer />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="video" id="video">
             <ErrorBoundary appName="Videos" onClose={() => closeWindow('video')}>
-              <VideoPlayer />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <VideoPlayer />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="paint" id="paint">
             <ErrorBoundary appName="Paint" onClose={() => closeWindow('paint')}>
-              <Paint />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <Paint />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="notes" id="notes">
             <ErrorBoundary appName="Notes" onClose={() => closeWindow('notes')}>
-              <Notes onEasterEgg={onEasterEgg} />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <Notes onEasterEgg={onEasterEgg} />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="bookshelf" id="bookshelf">
             <ErrorBoundary appName="AI Resources" onClose={() => closeWindow('bookshelf')}>
-              <Bookshelf />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <Bookshelf />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="kalimba" id="kalimba">
             <ErrorBoundary appName="Kalimba" onClose={() => closeWindow('kalimba')}>
-              <Kalimba />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <Kalimba />
+              </Suspense>
             </ErrorBoundary>
           </Window>
           <Window key="linkedin" id="linkedin">
             <ErrorBoundary appName="LinkedIn" onClose={() => closeWindow('linkedin')}>
-              <LinkedIn />
+              <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+                <LinkedIn />
+              </Suspense>
             </ErrorBoundary>
           </Window>
         </AnimatePresence>
