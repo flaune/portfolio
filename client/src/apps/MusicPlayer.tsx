@@ -10,26 +10,26 @@ const logger = createLogger('MusicPlayer');
 const tracks: Track[] = [
   {
     id: 1,
+    title: "Last Dinosaur - Zoom",
+    url: "/attached_assets/Last Dinosaur - Zoom.mp3",
+    duration: 0
+  },
+  {
+    id: 2,
     title: "Lyn - No More What If",
     url: "/attached_assets/lyn_-_no_more_what_if_1765390331882.mp3",
     duration: 0
   },
   {
-    id: 2,
+    id: 3,
     title: "Philip Bailey - Easy Lover",
     url: "/attached_assets/Philip_Bailey_-_Easy_Lover_1765390331881.mp3",
     duration: 0
   },
   {
-    id: 3,
+    id: 4,
     title: "Home Made Kazoku - Thank You",
     url: "/attached_assets/home_made_kazoku_-_thank_you_1765390331882.mp3",
-    duration: 0
-  },
-  {
-    id: 4,
-    title: "Last Dinosaur - Zoom",
-    url: "/attached_assets/Last Dinosaur - Zoom.mp3",
     duration: 0
   },
 ];
