@@ -36,6 +36,8 @@ const tracks: Track[] = [
 
 // Mobile-friendly audio player component with VLC-inspired design
 function MobileMusicPlayer() {
+  const audioRef = useRef<HTMLAudioElement>(null);
+
   // Use shared store state
   const {
     music,
@@ -45,6 +47,7 @@ function MobileMusicPlayer() {
     musicPrev,
     musicUpdateTime,
     musicSetVolume,
+    musicSetDuration,
     setMusicTracks,
     theme
   } = useOSStore();
@@ -58,6 +61,85 @@ function MobileMusicPlayer() {
   useEffect(() => {
     setMusicTracks(tracks);
   }, [setMusicTracks]);
+
+  // Handle play/pause state changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (playState === 'playing') {
+      audio.play().catch(err => {
+        logger.error('Failed to play audio:', err);
+      });
+    } else if (playState === 'paused') {
+      audio.pause();
+    } else if (playState === 'stopped') {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [playState]);
+
+  // Handle track changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.src = currentTrack.url;
+    audio.load();
+
+    if (playState === 'playing') {
+      audio.play().catch(err => {
+        logger.error('Failed to play audio:', err);
+      });
+    }
+  }, [currentTrackIndex, currentTrack.url, playState]);
+
+  // Handle volume changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = volume / 100;
+  }, [volume]);
+
+  // Handle time updates from store (seeking)
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Only update if there's a significant difference (to avoid loops)
+    if (Math.abs(audio.currentTime - currentTime) > 0.5) {
+      audio.currentTime = currentTime;
+    }
+  }, [currentTime]);
+
+  // Set up audio event listeners
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => {
+      musicUpdateTime(audio.currentTime);
+    };
+
+    const handleLoadedMetadata = () => {
+      musicSetDuration(audio.duration);
+    };
+
+    const handleEnded = () => {
+      musicNext();
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [musicUpdateTime, musicSetDuration, musicNext]);
 
   const togglePlayPause = () => {
     if (isPlaying) {
@@ -101,6 +183,9 @@ function MobileMusicPlayer() {
 
   return (
     <div className={`vlc-music-player ${isDark ? 'dark' : 'light'}`}>
+      {/* Hidden audio element for playback */}
+      <audio ref={audioRef} preload="metadata" />
+
       {/* Large Album Art Area */}
       <div className="album-art">
         <div className="album-art-placeholder">
@@ -491,7 +576,7 @@ function DesktopMusicPlayer() {
 
         // Sync initial state from store
         if (currentTrackIndex > 0) {
-          webamp.setTracksToPlay([currentTrackIndex]);
+          webamp.setCurrentTrack(currentTrackIndex);
         }
         if (playState === 'playing') {
           webamp.play();
@@ -499,9 +584,13 @@ function DesktopMusicPlayer() {
         webamp.setVolume(volume);
 
         // Listen to Webamp events and update store
-        webamp.onTrackDidChange((track) => {
-          if (track && typeof track === 'number') {
-            musicSetTrack(track);
+        webamp.onTrackDidChange((trackInfo) => {
+          if (trackInfo) {
+            // Find the index of the track by URL
+            const trackIndex = tracks.findIndex(t => t.url === trackInfo.url);
+            if (trackIndex !== -1) {
+              musicSetTrack(trackIndex);
+            }
           }
         });
 
@@ -521,16 +610,6 @@ function DesktopMusicPlayer() {
     return () => {
       if (webampRef.current) {
         logger.log('Disposing');
-        // Save current state before disposing
-        try {
-          const webamp = webampRef.current;
-          const currentTime = webamp.timeElapsed();
-          if (currentTime !== null) {
-            musicUpdateTime(currentTime);
-          }
-        } catch (err) {
-          logger.error('Error saving state:', err);
-        }
         webampRef.current.dispose();
         webampRef.current = null;
       }
