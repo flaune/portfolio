@@ -84,6 +84,22 @@ export function PersistentAudioPlayer() {
     }
   }, [currentTime]);
 
+  // Handle track changes - load new audio source
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Don't load if URL is empty or invalid
+    if (!currentTrack?.url || currentTrack.url.trim() === '') {
+      logger.log('No valid URL, skipping load');
+      return;
+    }
+
+    logger.log('Loading track:', currentTrack.title);
+    audio.src = currentTrack.url;
+    audio.load();
+  }, [currentTrack?.url, currentTrack?.title]);
+
   // Don't render anything visible - this is just the audio element
-  return <audio ref={audioRef} src={currentTrack?.url} preload="metadata" />;
+  return <audio ref={audioRef} preload="metadata" />;
 }
