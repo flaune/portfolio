@@ -22,7 +22,8 @@ export function Mail() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [lastSubmitTime, setLastSubmitTime] = useState<number>(0);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,28 +35,89 @@ export function Mail() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Client-side rate limiting: prevent rapid submissions
+    const now = Date.now();
+    const timeSinceLastSubmit = now - lastSubmitTime;
+    const minDelay = 3000; // 3 seconds between submissions
+
+    if (timeSinceLastSubmit < minDelay) {
+      setError(`Please wait ${Math.ceil((minDelay - timeSinceLastSubmit) / 1000)} seconds before submitting again.`);
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
-    
+    setLastSubmitTime(now);
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     try {
       const apiResponse = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
+        signal: controller.signal,
       });
-      
+
+      clearTimeout(timeoutId);
+
       const data = await apiResponse.json();
-      
+
       if (apiResponse.ok && data.success) {
         setIsSubmitted(true);
         form.reset();
       } else {
-        setError(data.message || 'Failed to send message. Please try again.');
+        // Handle specific error codes
+        const errorMessage = getErrorMessage(data.error, data.message, apiResponse.status);
+        setError(errorMessage);
       }
     } catch (err) {
-      setError('Failed to send message. Please try again.');
+      clearTimeout(timeoutId);
+
+      // Handle different error types
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Request timed out. Please check your connection and try again.');
+        } else if (err.message.includes('Failed to fetch')) {
+          setError('Network error. Please check your internet connection.');
+        } else {
+          setError('Unable to send message. Please try again later.');
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again later.');
+      }
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  // Convert error codes to user-friendly messages
+  function getErrorMessage(errorCode: string | undefined, fallbackMessage: string, statusCode: number): string {
+    switch (errorCode) {
+      case 'TOO_MANY_REQUESTS':
+        return 'Too many requests. Please wait a few minutes and try again.';
+      case 'VALIDATION_ERROR':
+        return fallbackMessage; // Use specific validation message
+      case 'SERVICE_UNAVAILABLE':
+        return 'Service temporarily unavailable. Please try again in a few moments.';
+      case 'EMAIL_FAILED':
+        return 'Unable to send message at this time. Please try again later.';
+      case 'REQUEST_TIMEOUT':
+        return 'Request took too long. Please try again.';
+      case 'INTERNAL_ERROR':
+        return 'An error occurred. Please try again later.';
+      default:
+        // Handle by status code if no error code provided
+        if (statusCode === 429) {
+          return 'Too many requests. Please wait a few minutes and try again.';
+        } else if (statusCode >= 500) {
+          return 'Server error. Please try again later.';
+        } else if (statusCode >= 400) {
+          return fallbackMessage || 'Invalid request. Please check your input.';
+        }
+        return fallbackMessage || 'Failed to send message. Please try again.';
     }
   }
 
