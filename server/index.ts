@@ -63,12 +63,29 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Log error details server-side for debugging
+    log(`❌ Error ${status}: ${err.message || 'Unknown error'}`, "error");
+    if (process.env.NODE_ENV !== "production" && err.stack) {
+      log(`   Stack: ${err.stack}`, "error");
+    }
+
+    // Don't expose sensitive error details to clients
+    const isClientError = status >= 400 && status < 500;
+    const message = isClientError
+      ? (err.message || "Bad request")
+      : "An error occurred. Please try again later.";
+
+    // Send secure error response
+    res.status(status).json({
+      success: false,
+      error: isClientError ? "CLIENT_ERROR" : "SERVER_ERROR",
+      message
+    });
+
+    // Don't re-throw - it causes issues with error handling
   });
 
   // importantly only setup vite in development and after
