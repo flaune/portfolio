@@ -24,10 +24,10 @@ export function Paint() {
 
   // Load cached state on initialization
   const cachedState = PaintCache.loadState();
-  const [color, setColor] = useState(cachedState.color);
-  const [tool, setTool] = useState<'pencil' | 'eraser'>(cachedState.tool);
+  const [color, setColor] = useState(cachedState.color ?? '#000000');
+  const [tool, setTool] = useState<'pencil' | 'eraser'>(cachedState.tool ?? 'pencil');
   const [isDrawing, setIsDrawing] = useState(false);
-  const [lineWidth, setLineWidth] = useState(cachedState.brushSize);
+  const [lineWidth, setLineWidth] = useState(cachedState.brushSize ?? 2);
 
   const getPosition = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
