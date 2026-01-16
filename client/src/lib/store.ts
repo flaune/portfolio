@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { cacheGet, CacheKeys, MusicCache, WindowCache } from './cache';
 
 export type AppId = 'finder' | 'gallery' | 'mail' | 'music' | 'video' | 'paint' | 'notes' | 'bookshelf' | 'linkedin' | 'twitter' | 'substack' | 'kalimba';
 
@@ -91,7 +92,7 @@ interface OSState {
   musicDismiss: () => void;
 }
 
-const initialWindows: Record<AppId, WindowState> = {
+const defaultWindows: Record<AppId, WindowState> = {
   finder: { id: 'finder', title: 'Finder', isOpen: true, isMinimized: false, isFullscreen: false, zIndex: 1, position: { x: 100, y: 50 }, size: { width: 800, height: 500 } },
   gallery: { id: 'gallery', title: 'My Portfolio', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 80, y: 40 }, size: { width: 900, height: 550 } },
   mail: { id: 'mail', title: 'Mail', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 150, y: 80 }, size: { width: 600, height: 500 } },
@@ -104,6 +105,37 @@ const initialWindows: Record<AppId, WindowState> = {
   twitter: { id: 'twitter', title: 'X', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0 },
   substack: { id: 'substack', title: 'Substack', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0 },
   kalimba: { id: 'kalimba', title: 'Kalimba', isOpen: false, isMinimized: false, isFullscreen: false, zIndex: 0, position: { x: 200, y: 100 }, size: { width: 600, height: 700 } },
+};
+
+// Load window state from cache or use defaults
+const getInitialWindows = (): Record<AppId, WindowState> => {
+  if (typeof window !== 'undefined') {
+    const cachedWindows = cacheGet<Record<AppId, WindowState>>(CacheKeys.WINDOWS_STATE);
+    if (cachedWindows) {
+      // Merge cached state with defaults to handle new windows added in updates
+      return {
+        ...defaultWindows,
+        ...cachedWindows,
+      };
+    }
+  }
+  return defaultWindows;
+};
+
+// Load music state from cache
+const getInitialMusicState = (): MusicState => {
+  const cached = MusicCache.loadState();
+  return {
+    tracks: defaultLightTracks,
+    currentTrackIndex: cached.currentTrackIndex ?? 0,
+    playState: cached.playState ?? 'stopped',
+    currentTime: cached.currentTime ?? 0,
+    duration: 0,
+    volume: cached.volume ?? 80,
+    shuffle: cached.shuffle ?? false,
+    repeat: cached.repeat ?? false,
+    showMiniPlayer: false,
+  };
 };
 
 // Initialize theme from localStorage or default to 'light'
@@ -144,19 +176,22 @@ export const useOSStore = create<OSState>((set) => ({
   showHelpModal: false,
   setShowHelpModal: (show) => set({ showHelpModal: show }),
 
-  windows: initialWindows,
+  windows: getInitialWindows(),
   activeWindowId: 'finder',
-  maxZIndex: 1,
+  maxZIndex: Math.max(1, ...Object.values(getInitialWindows()).map(w => w.zIndex)),
   
   mobileActiveApp: null,
   openMobileApp: (id) => set((state) => {
     const newZ = state.maxZIndex + 1;
+    const newWindows = {
+      ...state.windows,
+      [id]: { ...state.windows[id], isOpen: true, isMinimized: false, zIndex: newZ }
+    };
+    // Immediate save for open/close operations
+    WindowCache.saveState(newWindows);
     return {
       mobileActiveApp: id,
-      windows: {
-        ...state.windows,
-        [id]: { ...state.windows[id], isOpen: true, isMinimized: false, zIndex: newZ }
-      },
+      windows: newWindows,
       activeWindowId: id,
       maxZIndex: newZ
     };
@@ -165,139 +200,155 @@ export const useOSStore = create<OSState>((set) => ({
 
   openWindow: (id) => set((state) => {
     const newZ = state.maxZIndex + 1;
+    const newWindows = {
+      ...state.windows,
+      [id]: { ...state.windows[id], isOpen: true, isMinimized: false, zIndex: newZ }
+    };
+    // Immediate save for open/close operations
+    WindowCache.saveState(newWindows);
     return {
-      windows: {
-        ...state.windows,
-        [id]: { ...state.windows[id], isOpen: true, isMinimized: false, zIndex: newZ }
-      },
+      windows: newWindows,
       activeWindowId: id,
       maxZIndex: newZ
     };
   }),
 
-  closeWindow: (id) => set((state) => ({
-    windows: {
+  closeWindow: (id) => set((state) => {
+    const newWindows = {
       ...state.windows,
       [id]: { ...state.windows[id], isOpen: false }
-    }
-  })),
+    };
+    // Immediate save for open/close operations
+    WindowCache.saveState(newWindows);
+    return { windows: newWindows };
+  }),
 
-  minimizeWindow: (id) => set((state) => ({
-    windows: {
+  minimizeWindow: (id) => set((state) => {
+    const newWindows = {
       ...state.windows,
       [id]: { ...state.windows[id], isMinimized: true }
-    },
-    activeWindowId: null
-  })),
+    };
+    // Immediate save for open/close operations
+    WindowCache.saveState(newWindows);
+    return {
+      windows: newWindows,
+      activeWindowId: null
+    };
+  }),
 
   toggleFullscreen: (id) => set((state) => {
     const win = state.windows[id];
+    let newWindows;
     if (win.isFullscreen) {
-      return {
-        windows: {
-          ...state.windows,
-          [id]: {
-            ...win,
-            isFullscreen: false,
-            position: win.savedPosition || win.position,
-            size: win.savedSize || win.size,
-          }
+      newWindows = {
+        ...state.windows,
+        [id]: {
+          ...win,
+          isFullscreen: false,
+          position: win.savedPosition || win.position,
+          size: win.savedSize || win.size,
         }
       };
     } else {
-      return {
-        windows: {
-          ...state.windows,
-          [id]: {
-            ...win,
-            isFullscreen: true,
-            savedPosition: win.position,
-            savedSize: win.size,
-          }
+      newWindows = {
+        ...state.windows,
+        [id]: {
+          ...win,
+          isFullscreen: true,
+          savedPosition: win.position,
+          savedSize: win.size,
         }
       };
     }
+    // Immediate save for fullscreen toggle
+    WindowCache.saveState(newWindows);
+    return { windows: newWindows };
   }),
 
   focusWindow: (id) => set((state) => {
     const newZ = state.maxZIndex + 1;
+    const newWindows = {
+      ...state.windows,
+      [id]: { ...state.windows[id], isMinimized: false, zIndex: newZ }
+    };
+    // Immediate save for focus/z-index changes
+    WindowCache.saveState(newWindows);
     return {
-      windows: {
-        ...state.windows,
-        [id]: { ...state.windows[id], isMinimized: false, zIndex: newZ }
-      },
+      windows: newWindows,
       activeWindowId: id,
       maxZIndex: newZ
     };
   }),
 
-  updateWindowPosition: (id, position) => set((state) => ({
-    windows: {
+  updateWindowPosition: (id, position) => set((state) => {
+    const newWindows = {
       ...state.windows,
       [id]: { ...state.windows[id], position }
-    }
-  })),
+    };
+    // Debounced save for position updates (happens frequently during drag)
+    WindowCache.saveStateDebounced(newWindows);
+    return { windows: newWindows };
+  }),
 
-  updateWindowSize: (id, size) => set((state) => ({
-    windows: {
+  updateWindowSize: (id, size) => set((state) => {
+    const newWindows = {
       ...state.windows,
       [id]: { ...state.windows[id], size }
-    }
-  })),
+    };
+    // Debounced save for size updates (happens frequently during resize)
+    WindowCache.saveStateDebounced(newWindows);
+    return { windows: newWindows };
+  }),
 
   // Music controller state and actions
-  music: {
-    tracks: defaultLightTracks,
-    currentTrackIndex: 0,
-    playState: 'stopped',
-    currentTime: 0,
-    duration: 0,
-    volume: 80,
-    shuffle: false,
-    repeat: false,
-    showMiniPlayer: false,
-  },
+  music: getInitialMusicState(),
   
   setMusicTracks: (tracks) => set((state) => ({
     music: { ...state.music, tracks, currentTrackIndex: 0, currentTime: 0 }
   })),
   
-  musicPlay: () => set((state) => ({
-    music: { ...state.music, playState: 'playing', showMiniPlayer: true }
-  })),
-  
-  musicPause: () => set((state) => ({
-    music: { ...state.music, playState: 'paused' }
-  })),
-  
-  musicStop: () => set((state) => ({
-    music: { ...state.music, playState: 'stopped', currentTime: 0, showMiniPlayer: false }
-  })),
+  musicPlay: () => set((state) => {
+    const newMusic = { ...state.music, playState: 'playing' as PlayState, showMiniPlayer: true };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
+  }),
+
+  musicPause: () => set((state) => {
+    const newMusic = { ...state.music, playState: 'paused' as PlayState };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
+  }),
+
+  musicStop: () => set((state) => {
+    const newMusic = { ...state.music, playState: 'stopped' as PlayState, currentTime: 0, showMiniPlayer: false };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
+  }),
   
   musicNext: () => set((state) => {
     const { tracks, currentTrackIndex, shuffle, repeat } = state.music;
     if (tracks.length === 0) return state;
-    
+
     // Filter out tracks without URLs
     const validTracks = tracks.filter(t => t.url && t.url.trim() !== '');
     if (validTracks.length === 0) return state;
-    
+
     const validIndices = tracks
       .map((t, i) => ({ track: t, index: i }))
       .filter(({ track }) => track.url && track.url.trim() !== '')
       .map(({ index }) => index);
-    
+
     const currentValidIndex = validIndices.indexOf(currentTrackIndex);
-    
+
     // If current track is invalid, start from first valid track
     if (currentValidIndex === -1) {
-      return {
-        music: { ...state.music, currentTrackIndex: validIndices[0], currentTime: 0 }
-      };
+      const newMusic = { ...state.music, currentTrackIndex: validIndices[0], currentTime: 0 };
+      MusicCache.saveState(newMusic);
+      return { music: newMusic };
     }
-    
+
     let nextValidIndex: number;
-    
+
     if (repeat) {
       nextValidIndex = currentValidIndex;
     } else if (shuffle) {
@@ -308,65 +359,84 @@ export const useOSStore = create<OSState>((set) => ({
     } else {
       nextValidIndex = (currentValidIndex + 1) % validIndices.length;
     }
-    
-    return {
-      music: { ...state.music, currentTrackIndex: validIndices[nextValidIndex], currentTime: 0 }
-    };
+
+    const newMusic = { ...state.music, currentTrackIndex: validIndices[nextValidIndex], currentTime: 0 };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
   }),
-  
+
   musicPrev: () => set((state) => {
     const { tracks, currentTrackIndex, currentTime } = state.music;
     if (tracks.length === 0) return state;
-    
+
     if (currentTime > 3) {
-      return { music: { ...state.music, currentTime: 0 } };
+      const newMusic = { ...state.music, currentTime: 0 };
+      MusicCache.saveState(newMusic);
+      return { music: newMusic };
     }
-    
+
     // Filter out tracks without URLs
     const validIndices = tracks
       .map((t, i) => ({ track: t, index: i }))
       .filter(({ track }) => track.url && track.url.trim() !== '')
       .map(({ index }) => index);
-    
+
     if (validIndices.length === 0) return state;
-    
+
     const currentValidIndex = validIndices.indexOf(currentTrackIndex);
     const prevValidIndex = (currentValidIndex - 1 + validIndices.length) % validIndices.length;
-    
-    return {
-      music: { ...state.music, currentTrackIndex: validIndices[prevValidIndex], currentTime: 0 }
-    };
+
+    const newMusic = { ...state.music, currentTrackIndex: validIndices[prevValidIndex], currentTime: 0 };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
+  }),
+
+  musicSetTrack: (index) => set((state) => {
+    const newMusic = { ...state.music, currentTrackIndex: index, currentTime: 0, playState: 'playing' as PlayState, showMiniPlayer: true };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
   }),
   
-  musicSetTrack: (index) => set((state) => ({
-    music: { ...state.music, currentTrackIndex: index, currentTime: 0, playState: 'playing', showMiniPlayer: true }
-  })),
-  
-  musicUpdateTime: (time) => set((state) => ({
-    music: { ...state.music, currentTime: time }
-  })),
-  
-  musicSetDuration: (duration) => set((state) => ({
-    music: { ...state.music, duration }
-  })),
-  
-  musicSetVolume: (volume) => set((state) => ({
-    music: { ...state.music, volume }
-  })),
-  
-  musicToggleShuffle: () => set((state) => ({
-    music: { ...state.music, shuffle: !state.music.shuffle }
-  })),
-  
-  musicToggleRepeat: () => set((state) => ({
-    music: { ...state.music, repeat: !state.music.repeat }
-  })),
-  
-  musicShowMiniPlayer: (show) => set((state) => ({
-    music: { ...state.music, showMiniPlayer: show }
-  })),
-  
-  musicDismiss: () => set((state) => ({
-    music: { ...state.music, playState: 'stopped', currentTime: 0, showMiniPlayer: false }
-  })),
+  musicUpdateTime: (time) => set((state) => {
+    const newMusic = { ...state.music, currentTime: time };
+    // Only save to cache every 5 seconds to avoid excessive writes
+    if (Math.floor(time) % 5 === 0 || time === 0) {
+      MusicCache.saveState(newMusic);
+    }
+    return { music: newMusic };
+  }),
+
+  musicSetDuration: (duration) => set((state) => {
+    const newMusic = { ...state.music, duration };
+    return { music: newMusic };
+  }),
+
+  musicSetVolume: (volume) => set((state) => {
+    const newMusic = { ...state.music, volume };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
+  }),
+
+  musicToggleShuffle: () => set((state) => {
+    const newMusic = { ...state.music, shuffle: !state.music.shuffle };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
+  }),
+
+  musicToggleRepeat: () => set((state) => {
+    const newMusic = { ...state.music, repeat: !state.music.repeat };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
+  }),
+
+  musicShowMiniPlayer: (show) => set((state) => {
+    const newMusic = { ...state.music, showMiniPlayer: show };
+    return { music: newMusic };
+  }),
+
+  musicDismiss: () => set((state) => {
+    const newMusic = { ...state.music, playState: 'stopped' as PlayState, currentTime: 0, showMiniPlayer: false };
+    MusicCache.saveState(newMusic);
+    return { music: newMusic };
+  }),
 }));

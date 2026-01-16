@@ -1,13 +1,15 @@
 import { useTime } from '@/hooks/use-time';
 import { useOSStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import { Battery, Wifi, Search, Moon, Sun, ChevronDown, Check, ZoomIn, Eye, HelpCircle, X } from 'lucide-react';
+import { Battery, Wifi, Search, Moon, Sun, ChevronDown, Check, ZoomIn, Eye, HelpCircle, X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cacheClearAll, getCacheStats } from '@/lib/cache';
 
 function ViewDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme, reduceMotion, toggleReduceMotion, uiZoom, setUIZoom } = useOSStore();
   const isDark = theme === 'dark';
@@ -16,6 +18,7 @@ function ViewDropdown() {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setShowResetConfirm(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -23,6 +26,19 @@ function ViewDropdown() {
   }, []);
 
   const zoomOptions = [75, 100, 125, 150];
+
+  const handleResetCache = () => {
+    if (!showResetConfirm) {
+      setShowResetConfirm(true);
+      return;
+    }
+
+    const success = cacheClearAll();
+    if (success) {
+      // Reload the page to apply cleared cache
+      window.location.reload();
+    }
+  };
 
   return (
     <div ref={dropdownRef} className="relative">
@@ -72,6 +88,22 @@ function ViewDropdown() {
               <span>Reduce Motion</span>
             </div>
             {reduceMotion && <Check className="w-4 h-4 text-green-500" />}
+          </button>
+
+          <button
+            onClick={handleResetCache}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors",
+              showResetConfirm
+                ? (isDark ? "bg-red-500/20 hover:bg-red-500/30" : "bg-red-50 hover:bg-red-100")
+                : (isDark ? "hover:bg-white/10" : "hover:bg-gray-100")
+            )}
+            data-testid="menu-reset-cache"
+          >
+            <Trash2 className={cn("w-4 h-4", showResetConfirm ? "text-red-500" : "opacity-70")} />
+            <span className={showResetConfirm ? "text-red-500 font-medium" : ""}>
+              {showResetConfirm ? "Click again to confirm" : "Reset All Cache"}
+            </span>
           </button>
 
           <div className={cn(

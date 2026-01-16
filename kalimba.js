@@ -7,8 +7,11 @@ class Kalimba {
         this.tines = document.querySelectorAll('.tine');
         this.noteFrequencies = this.createNoteFrequencyMap();
         this.activeNotes = new Set();
+        this.lastNotes = [];
+        this.maxLastNotes = 20; // Keep track of last 20 notes
 
         this.init();
+        this.loadCachedState();
     }
 
     init() {
@@ -72,6 +75,9 @@ class Kalimba {
         if (this.activeNotes.has(noteKey)) return;
         this.activeNotes.add(noteKey);
 
+        // Track played note
+        this.trackNote(note);
+
         // Visual feedback
         this.animateTine(tineElement);
 
@@ -82,6 +88,51 @@ class Kalimba {
         setTimeout(() => {
             this.activeNotes.delete(noteKey);
         }, 100);
+    }
+
+    trackNote(note) {
+        // Add note to history
+        this.lastNotes.push({
+            note: note,
+            timestamp: Date.now()
+        });
+
+        // Keep only last N notes
+        if (this.lastNotes.length > this.maxLastNotes) {
+            this.lastNotes.shift();
+        }
+
+        // Save to cache
+        this.saveCachedState();
+    }
+
+    loadCachedState() {
+        try {
+            const cacheKey = 'portfolio_kalimba_last_notes';
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                const data = JSON.parse(cached);
+                if (data.value && Array.isArray(data.value)) {
+                    this.lastNotes = data.value;
+                    console.log('Loaded cached kalimba notes:', this.lastNotes.length);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load cached kalimba state:', e);
+        }
+    }
+
+    saveCachedState() {
+        try {
+            const cacheKey = 'portfolio_kalimba_last_notes';
+            const cacheData = {
+                value: this.lastNotes,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        } catch (e) {
+            console.error('Failed to save kalimba state:', e);
+        }
     }
 
     createKalimbaSound(frequency) {
