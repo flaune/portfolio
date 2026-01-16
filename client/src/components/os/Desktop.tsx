@@ -81,10 +81,12 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
   }, [isDark, uiZoom]);
 
   return (
-    <div 
+    <div
       key={`desktop-theme-${theme}`}
       className={cn(
-        "w-screen h-screen overflow-hidden relative bg-cover bg-center bg-no-repeat font-sans",
+        "w-screen relative bg-cover bg-center bg-no-repeat font-sans",
+        "h-screen md:overflow-hidden overflow-y-auto",
+        "min-h-screen",
         !isDark && "text-[#2C2C2C] selection:bg-[#D99D3C]/30",
         isDark && "text-white selection:bg-blue-500/30",
         !reduceMotion && "transition-all duration-700"
@@ -97,8 +99,8 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
       
       {/* Mobile App Grid - shown when no app is active */}
       {isMobile && !mobileActiveApp && (
-        <div className="absolute inset-0 top-8 flex items-center justify-center px-6 pb-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">
-          <div className="grid grid-cols-4 gap-4 max-w-sm" role="grid" aria-label="Applications">
+        <div className="absolute inset-0 top-8 flex items-center justify-center px-6 pb-24 pt-[calc(1.5rem+env(safe-area-inset-top))] overflow-y-auto">
+          <div className="grid grid-cols-4 gap-4 max-w-sm my-auto" role="grid" aria-label="Applications">
             {mobileApps.map((app) => {
               const Icon = app.icon;
               return (
