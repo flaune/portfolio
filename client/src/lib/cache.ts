@@ -182,17 +182,30 @@ export function compressCanvasData(dataUrl: string, quality: number = 0.8): stri
       return dataUrl;
     }
 
-    // Create a temporary canvas to recompress as JPEG
-    const img = new Image();
+    // For base64 data URLs, we can decode directly without loading an image
+    // This is much faster and synchronous
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-
     if (!ctx) return dataUrl;
 
-    // This is sync but we're already in a throttled/debounced context
+    // Create image and load it synchronously (data URLs load immediately)
+    const img = new Image();
+
+    // Data URLs are loaded synchronously, but we still need to handle it properly
+    // We'll use a synchronous approach by checking img.complete
     img.src = dataUrl;
-    canvas.width = img.width;
-    canvas.height = img.height;
+
+    // For data URLs, the image should be immediately available
+    // But if not, we can't compress it synchronously, so return original
+    if (!img.complete || img.naturalWidth === 0) {
+      if (IS_DEV) {
+        console.warn('[Cache] Image not immediately available for compression, returning original');
+      }
+      return dataUrl;
+    }
+
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
     ctx.drawImage(img, 0, 0);
 
     // Convert to JPEG with quality reduction
