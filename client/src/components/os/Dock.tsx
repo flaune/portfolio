@@ -104,7 +104,7 @@ export function Dock() {
     { id: 'finder', icon: FolderOpen, label: 'Finder' },
     { id: 'mail', icon: Mail, label: 'Mail' },
     { id: 'music', icon: Music, label: 'Music' },
-    { id: 'video', icon: Video, label: 'Videos' },
+    // { id: 'video', icon: Video, label: 'Videos' }, // Temporarily hidden - uncomment to re-enable
     { id: 'paint', icon: Palette, label: 'Paint' },
     { id: 'notes', icon: StickyNote, label: 'Notes' },
     { id: 'bookshelf', icon: BookOpen, label: 'AI Resources' },

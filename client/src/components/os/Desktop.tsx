@@ -17,7 +17,7 @@ const Finder = lazy(() => import('@/apps/Finder').then(m => ({ default: m.Finder
 const Gallery = lazy(() => import('@/apps/Gallery').then(m => ({ default: m.Gallery })));
 const Mail = lazy(() => import('@/apps/Mail').then(m => ({ default: m.Mail })));
 const MusicPlayer = lazy(() => import('@/apps/MusicPlayer').then(m => ({ default: m.MusicPlayer })));
-const VideoPlayer = lazy(() => import('@/apps/VideoPlayer').then(m => ({ default: m.VideoPlayer })));
+// const VideoPlayer = lazy(() => import('@/apps/VideoPlayer').then(m => ({ default: m.VideoPlayer }))); // Temporarily hidden - uncomment to re-enable
 const Paint = lazy(() => import('@/apps/Paint').then(m => ({ default: m.Paint })));
 const Notes = lazy(() => import('@/apps/Notes').then(m => ({ default: m.Notes })));
 const Bookshelf = lazy(() => import('@/apps/AiResources').then(m => ({ default: m.Bookshelf })));
@@ -29,7 +29,7 @@ const mobileApps: { id: AppId; icon: React.ElementType; label: string; external?
   { id: 'finder', icon: FolderOpen, label: 'Finder' },
   { id: 'mail', icon: MailIcon, label: 'Mail' },
   { id: 'music', icon: Music, label: 'Music' },
-  { id: 'video', icon: Video, label: 'Videos' },
+  // { id: 'video', icon: Video, label: 'Videos' }, // Temporarily hidden - uncomment to re-enable
   { id: 'paint', icon: Palette, label: 'Paint' },
   { id: 'notes', icon: StickyNote, label: 'Notes' },
   { id: 'bookshelf', icon: BookOpen, label: 'AI Resources' },
@@ -234,6 +234,7 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
               </Suspense>
             </ErrorBoundary>
           </Window>
+          {/* Temporarily hidden - uncomment to re-enable
           <Window key="video" id="video">
             <ErrorBoundary appName="Videos" onClose={() => closeWindow('video')}>
               <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
@@ -241,6 +242,7 @@ export function Desktop({ onEasterEgg }: DesktopProps) {
               </Suspense>
             </ErrorBoundary>
           </Window>
+          */}
           <Window key="paint" id="paint">
             <ErrorBoundary appName="Paint" onClose={() => closeWindow('paint')}>
               <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
