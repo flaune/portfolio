@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo, memo } from "react"
 import { Flame, Users, Clock, Grid3x3, Bell, X, Star, TrendingDown, ShoppingCart } from "lucide-react"
 
 import expedition33Img from "@assets/image_1766436986341.png"
@@ -113,7 +113,7 @@ function FilterTabs({ activeFilter, onFilterChange }: { activeFilter: FilterType
   )
 }
 
-function GameCard({ game, onRemove }: { game: Game; onRemove: (id: number) => void }) {
+const GameCard = memo(function GameCard({ game, onRemove }: { game: Game; onRemove: (id: number) => void }) {
   const [showNotificationModal, setShowNotificationModal] = useState(false)
 
   return (
@@ -126,6 +126,7 @@ function GameCard({ game, onRemove }: { game: Game; onRemove: (id: number) => vo
               src={game.image}
               alt={game.title}
               className="w-16 h-20 object-cover rounded"
+              loading="lazy"
             />
             {game.discount > 0 && (
               <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
@@ -243,20 +244,22 @@ function GameCard({ game, onRemove }: { game: Game; onRemove: (id: number) => vo
       )}
     </>
   )
-}
+});
 
 export function EpicGamesWishlist() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all")
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [games, setGames] = useState(GAMES)
 
-  const filteredGames = games.filter((game) => {
-    if (activeFilter === "all") return true
-    if (activeFilter === "on-sale") return game.discount > 0
-    if (activeFilter === "friends") return game.friendCount > 10
-    if (activeFilter === "coming-soon") return game.status !== "available"
-    return true
-  })
+  const filteredGames = useMemo(() => {
+    return games.filter((game) => {
+      if (activeFilter === "all") return true
+      if (activeFilter === "on-sale") return game.discount > 0
+      if (activeFilter === "friends") return game.friendCount > 10
+      if (activeFilter === "coming-soon") return game.status !== "available"
+      return true
+    })
+  }, [games, activeFilter])
 
   const handleRemoveGame = (id: number) => {
     setGames(games.filter(g => g.id !== id))

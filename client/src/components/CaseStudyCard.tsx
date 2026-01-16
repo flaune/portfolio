@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useOSStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,7 +19,7 @@ interface CaseStudyCardProps {
   caseStudy: CaseStudy;
 }
 
-export function CaseStudyCard({ caseStudy }: CaseStudyCardProps) {
+export const CaseStudyCard = memo(function CaseStudyCard({ caseStudy }: CaseStudyCardProps) {
   const [showSolution, setShowSolution] = useState(false);
   const { theme, reduceMotion } = useOSStore();
   const isDark = theme === 'dark';
@@ -213,4 +213,4 @@ export function CaseStudyCard({ caseStudy }: CaseStudyCardProps) {
       </AnimatePresence>
     </div>
   );
-}
+});

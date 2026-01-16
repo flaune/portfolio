@@ -22,6 +22,7 @@ export function YouTubeMusicQueue() {
   const [currentTime] = useState(142)
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
   const [draggedOver, setDraggedOver] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   const [currentSong] = useState<Song>({
     id: "current",
@@ -49,16 +50,12 @@ export function YouTubeMusicQueue() {
   const progress = (currentTime / totalDuration) * 100
 
   const handleRemoveSong = (id: string) => {
-    const element = document.getElementById(`song-${id}`)
-    if (element) {
-      element.style.opacity = "0"
-      element.style.transform = "translateX(20px)"
-      setTimeout(() => {
-        setQueue(queue.filter((song) => song.id !== id))
-      }, 200)
-    } else {
+    // Use state-based CSS animation instead of direct DOM manipulation
+    setRemovingId(id)
+    setTimeout(() => {
       setQueue(queue.filter((song) => song.id !== id))
-    }
+      setRemovingId(null)
+    }, 200)
   }
 
   const handleDragStart = (id: string) => {
@@ -117,6 +114,7 @@ export function YouTubeMusicQueue() {
                 src={currentSong.thumbnail}
                 alt={currentSong.title}
                 className="w-full aspect-square rounded-lg shadow-lg object-cover"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
@@ -231,6 +229,8 @@ export function YouTubeMusicQueue() {
                     className={`group relative flex items-center gap-2 p-2.5 rounded-lg transition-all duration-200 cursor-move ${
                       draggedItem === song.id ? "opacity-40 scale-[0.98]" : ""
                     } ${
+                      removingId === song.id ? "opacity-0 translate-x-5" : ""
+                    } ${
                       draggedOver === song.id
                         ? "bg-neutral-700 ring-2 ring-red-500 ring-offset-2 ring-offset-black scale-[1.02]"
                         : index === 0
@@ -254,6 +254,7 @@ export function YouTubeMusicQueue() {
                         src={song.thumbnail}
                         alt={song.title}
                         className="w-10 h-10 rounded shadow-md ring-1 ring-white/5 object-cover"
+                        loading="lazy"
                       />
                       {index === 0 && (
                         <>

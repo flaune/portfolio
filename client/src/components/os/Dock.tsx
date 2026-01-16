@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useSpring, useTransform, MotionValue } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, memo, useCallback } from 'react';
 import { useOSStore, AppId } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,7 +17,7 @@ import {
   Piano
 } from 'lucide-react';
 
-function DockIcon({ mouseX, id, icon: Icon, label, isMobile, external }: { mouseX: MotionValue, id: AppId, icon: any, label: string, isMobile: boolean, external?: string }) {
+const DockIcon = memo(function DockIcon({ mouseX, id, icon: Icon, label, isMobile, external }: { mouseX: MotionValue, id: AppId, icon: any, label: string, isMobile: boolean, external?: string }) {
   const ref = useRef<HTMLButtonElement>(null);
   const { openWindow, windows, theme } = useOSStore();
   const isDark = theme === 'dark';
@@ -31,20 +31,20 @@ function DockIcon({ mouseX, id, icon: Icon, label, isMobile, external }: { mouse
   const widthSync = useTransform(distance, [-150, 0, 150], isMobile ? [40, 40, 40] : [50, 90, 50]);
   const width = useSpring(widthSync, { mass: 0.1, stiffness: 150, damping: 12 });
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (external) {
       window.open(external, '_blank');
     } else {
       openWindow(id);
     }
-  };
+  }, [external, id, openWindow]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       handleClick();
     }
-  };
+  }, [handleClick]);
 
   return (
     <div className="flex flex-col items-center gap-1 group flex-shrink-0">
@@ -92,7 +92,7 @@ function DockIcon({ mouseX, id, icon: Icon, label, isMobile, external }: { mouse
       )}
     </div>
   );
-}
+});
 
 export function Dock() {
   const mouseX = useMotionValue(Infinity);
