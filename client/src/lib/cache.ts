@@ -1,15 +1,122 @@
 /**
  * Centralized localStorage cache utility for portfolio website
  * All keys are namespaced with "portfolio_" prefix to avoid conflicts
+ *
+ * Performance optimized:
+ * - Debounced/throttled saves to prevent excessive writes
+ * - Canvas compression to reduce storage
+ * - Size limits with warnings
+ * - Dev-mode performance monitoring
  */
 
 const CACHE_PREFIX = 'portfolio_';
 const MUSIC_CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_CANVAS_SIZE_MB = 2; // Warn if canvas cache exceeds 2MB
+const MAX_CANVAS_SIZE_BYTES = MAX_CANVAS_SIZE_MB * 1024 * 1024;
+const PERF_WARN_THRESHOLD_MS = 50; // Warn if operation takes >50ms in dev mode
+const IS_DEV = import.meta.env.DEV;
 
 interface CacheData<T> {
   value: T;
   timestamp: number;
   expiresAt?: number;
+}
+
+/**
+ * Performance utilities: Debounce and Throttle
+ */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DebouncedFunction<T extends (...args: any[]) => any> = {
+  (...args: Parameters<T>): void;
+  cancel: () => void;
+};
+
+/**
+ * Debounce a function - delays execution until after wait time has elapsed since last call
+ * Perfect for: scroll position saves, window resizes
+ */
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): DebouncedFunction<T> {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  const debounced = (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func(...args);
+      timeout = null;
+    }, wait);
+  };
+
+  debounced.cancel = () => {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+  };
+
+  return debounced;
+}
+
+/**
+ * Throttle a function - limits execution to once per wait time
+ * Perfect for: frequent events like dragging, but need regular updates
+ */
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): DebouncedFunction<T> {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  let lastRan: number = 0;
+
+  const throttled = (...args: Parameters<T>) => {
+    const now = Date.now();
+
+    if (now - lastRan >= wait) {
+      func(...args);
+      lastRan = now;
+    } else {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        func(...args);
+        lastRan = Date.now();
+        timeout = null;
+      }, wait - (now - lastRan));
+    }
+  };
+
+  throttled.cancel = () => {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+  };
+
+  return throttled;
+}
+
+/**
+ * Performance monitoring wrapper for dev mode
+ */
+function withPerformanceMonitoring<T>(
+  operation: string,
+  fn: () => T
+): T {
+  if (!IS_DEV) return fn();
+
+  const start = performance.now();
+  const result = fn();
+  const duration = performance.now() - start;
+
+  if (duration > PERF_WARN_THRESHOLD_MS) {
+    console.warn(
+      `[Cache Performance] ${operation} took ${duration.toFixed(2)}ms (threshold: ${PERF_WARN_THRESHOLD_MS}ms)`
+    );
+  }
+
+  return result;
 }
 
 /**
@@ -62,6 +169,74 @@ function isLocalStorageAvailable(): boolean {
 }
 
 /**
+ * Compress canvas data by reducing quality
+ * @param dataUrl Base64 canvas data URL
+ * @param quality JPEG quality 0-1 (default 0.8)
+ * @returns Compressed data URL or original if compression fails
+ */
+export function compressCanvasData(dataUrl: string, quality: number = 0.8): string {
+  try {
+    // If it's already small enough, return as-is
+    const sizeBytes = new Blob([dataUrl]).size;
+    if (sizeBytes < MAX_CANVAS_SIZE_BYTES) {
+      return dataUrl;
+    }
+
+    // Create a temporary canvas to recompress as JPEG
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return dataUrl;
+
+    // This is sync but we're already in a throttled/debounced context
+    img.src = dataUrl;
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+
+    // Convert to JPEG with quality reduction
+    const compressedData = canvas.toDataURL('image/jpeg', quality);
+    const compressedSize = new Blob([compressedData]).size;
+
+    if (IS_DEV) {
+      console.log(
+        `[Cache] Canvas compressed: ${(sizeBytes / 1024).toFixed(2)}KB → ${(compressedSize / 1024).toFixed(2)}KB`
+      );
+    }
+
+    // If still too large, warn user
+    if (compressedSize > MAX_CANVAS_SIZE_BYTES) {
+      console.warn(
+        `[Cache] Canvas data is large (${(compressedSize / 1024 / 1024).toFixed(2)}MB). Consider clearing to free space.`
+      );
+    }
+
+    return compressedData;
+  } catch (e) {
+    console.error('[Cache] Failed to compress canvas data:', e);
+    return dataUrl;
+  }
+}
+
+/**
+ * Check cache item size and warn if too large
+ */
+function checkCacheSize(key: string, data: string): boolean {
+  const sizeBytes = new Blob([data]).size;
+  const sizeMB = sizeBytes / 1024 / 1024;
+
+  if (sizeMB > MAX_CANVAS_SIZE_MB) {
+    console.warn(
+      `[Cache] Item "${key}" is large (${sizeMB.toFixed(2)}MB). Storage limit may be exceeded.`
+    );
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Get full cache key with prefix
  */
 function getCacheKey(key: string): string {
@@ -70,6 +245,7 @@ function getCacheKey(key: string): string {
 
 /**
  * Set item in cache with optional expiration
+ * Includes performance monitoring and size checks
  */
 export function cacheSet<T>(
   key: string,
@@ -80,37 +256,46 @@ export function cacheSet<T>(
     return false;
   }
 
-  try {
-    const cacheData: CacheData<T> = {
-      value,
-      timestamp: Date.now(),
-      expiresAt: expiryMs ? Date.now() + expiryMs : undefined,
-    };
+  return withPerformanceMonitoring(`cacheSet(${key})`, () => {
+    try {
+      const cacheData: CacheData<T> = {
+        value,
+        timestamp: Date.now(),
+        expiresAt: expiryMs ? Date.now() + expiryMs : undefined,
+      };
 
-    localStorage.setItem(getCacheKey(key), JSON.stringify(cacheData));
-    return true;
-  } catch (e) {
-    // Handle quota exceeded or other errors
-    if (e instanceof Error && e.name === 'QuotaExceededError') {
-      console.warn('localStorage quota exceeded, attempting cleanup...');
-      // Try to clear expired items and retry
-      clearExpiredCache();
-      try {
-        const cacheData: CacheData<T> = {
-          value,
-          timestamp: Date.now(),
-          expiresAt: expiryMs ? Date.now() + expiryMs : undefined,
-        };
-        localStorage.setItem(getCacheKey(key), JSON.stringify(cacheData));
-        return true;
-      } catch (retryError) {
-        console.error('Failed to cache after cleanup:', retryError);
-        return false;
+      const serialized = JSON.stringify(cacheData);
+
+      // Check size for large items (like canvas data)
+      if (key.includes('canvas') || key.includes('CANVAS')) {
+        checkCacheSize(key, serialized);
       }
+
+      localStorage.setItem(getCacheKey(key), serialized);
+      return true;
+    } catch (e) {
+      // Handle quota exceeded or other errors
+      if (e instanceof Error && e.name === 'QuotaExceededError') {
+        console.warn('localStorage quota exceeded, attempting cleanup...');
+        // Try to clear expired items and retry
+        clearExpiredCache();
+        try {
+          const cacheData: CacheData<T> = {
+            value,
+            timestamp: Date.now(),
+            expiresAt: expiryMs ? Date.now() + expiryMs : undefined,
+          };
+          localStorage.setItem(getCacheKey(key), JSON.stringify(cacheData));
+          return true;
+        } catch (retryError) {
+          console.error('Failed to cache after cleanup:', retryError);
+          return false;
+        }
+      }
+      console.error('Failed to cache data:', e);
+      return false;
     }
-    console.error('Failed to cache data:', e);
-    return false;
-  }
+  });
 }
 
 /**
@@ -310,30 +495,53 @@ export const MusicCache = {
 };
 
 /**
- * Paint-specific cache helpers
+ * Paint-specific cache helpers with throttled saves and compression
  */
 export const PaintCache = {
+  /**
+   * Save paint state (immediate for non-canvas data)
+   * Canvas data should be saved via saveCanvasDataThrottled
+   */
   saveState: (state: {
-    canvasData: string | null;
+    canvasData?: string | null;
     color: string;
     brushSize: number;
     tool: 'pencil' | 'eraser';
   }) => {
-    if (state.canvasData) {
-      cacheSet(CacheKeys.PAINT_CANVAS_DATA, state.canvasData);
-    }
+    // Save lightweight state immediately
     cacheSet(CacheKeys.PAINT_COLOR, state.color);
     cacheSet(CacheKeys.PAINT_BRUSH_SIZE, state.brushSize);
     cacheSet(CacheKeys.PAINT_TOOL, state.tool);
+
+    // Canvas data is saved separately with throttling
+    if (state.canvasData !== undefined && state.canvasData !== null) {
+      // Compress before saving
+      const compressed = compressCanvasData(state.canvasData, 0.85);
+      cacheSet(CacheKeys.PAINT_CANVAS_DATA, compressed);
+    } else if (state.canvasData === null) {
+      // Explicitly clear canvas cache
+      cacheRemove(CacheKeys.PAINT_CANVAS_DATA);
+    }
   },
 
+  /**
+   * Throttled canvas save - use this for drawing operations
+   * Saves max once every 1500ms to avoid blocking
+   */
+  saveCanvasDataThrottled: throttle((canvasData: string) => {
+    const compressed = compressCanvasData(canvasData, 0.85);
+    cacheSet(CacheKeys.PAINT_CANVAS_DATA, compressed);
+  }, 1500), // 1.5 second throttle
+
   loadState: () => {
-    return {
-      canvasData: cacheGet<string | null>(CacheKeys.PAINT_CANVAS_DATA, null),
-      color: cacheGet<string>(CacheKeys.PAINT_COLOR, '#000000'),
-      brushSize: cacheGet<number>(CacheKeys.PAINT_BRUSH_SIZE, 2),
-      tool: cacheGet<'pencil' | 'eraser'>(CacheKeys.PAINT_TOOL, 'pencil'),
-    };
+    return withPerformanceMonitoring('PaintCache.loadState', () => {
+      return {
+        canvasData: cacheGet<string | null>(CacheKeys.PAINT_CANVAS_DATA, null),
+        color: cacheGet<string>(CacheKeys.PAINT_COLOR, '#000000'),
+        brushSize: cacheGet<number>(CacheKeys.PAINT_BRUSH_SIZE, 2),
+        tool: cacheGet<'pencil' | 'eraser'>(CacheKeys.PAINT_TOOL, 'pencil'),
+      };
+    });
   },
 
   clear: () => {
@@ -345,17 +553,22 @@ export const PaintCache = {
 };
 
 /**
- * Notes-specific cache helpers
+ * Notes-specific cache helpers with debounced scroll saves
  */
 export const NotesCache = {
+  /**
+   * Save notes state immediately (for note selection, etc.)
+   */
   saveState: (state: {
     selectedNoteId: number | null;
-    scrollPosition: number;
+    scrollPosition?: number;
     secretAnswer?: string;
     secretShown?: boolean;
   }) => {
     cacheSet(CacheKeys.NOTES_SELECTED, state.selectedNoteId);
-    cacheSet(CacheKeys.NOTES_SCROLL_POSITION, state.scrollPosition);
+    if (state.scrollPosition !== undefined) {
+      cacheSet(CacheKeys.NOTES_SCROLL_POSITION, state.scrollPosition);
+    }
     if (state.secretAnswer !== undefined) {
       cacheSet(CacheKeys.NOTES_SECRET_ANSWER, state.secretAnswer);
     }
@@ -363,6 +576,14 @@ export const NotesCache = {
       cacheSet(CacheKeys.NOTES_SECRET_SHOWN, state.secretShown);
     }
   },
+
+  /**
+   * Debounced scroll position save - use for onScroll events
+   * Waits 500ms after last scroll before saving
+   */
+  saveScrollPositionDebounced: debounce((scrollPosition: number) => {
+    cacheSet(CacheKeys.NOTES_SCROLL_POSITION, scrollPosition);
+  }, 500),
 
   loadState: () => {
     return {
@@ -408,3 +629,64 @@ export const KalimbaCache = {
     cacheRemove(CacheKeys.KALIMBA_SEQUENCES);
   },
 };
+
+/**
+ * Window management cache with debouncing for position/size updates
+ * Use this for dragging operations to avoid excessive writes
+ */
+export const WindowCache = {
+  /**
+   * Save window state immediately (for open/close/minimize)
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  saveState: (windows: Record<string, any>) => {
+    cacheSet(CacheKeys.WINDOWS_STATE, windows);
+  },
+
+  /**
+   * Debounced window state save - use for position/size updates during drag/resize
+   * Waits 500ms after last change before saving
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  saveStateDebounced: debounce((windows: Record<string, any>) => {
+    cacheSet(CacheKeys.WINDOWS_STATE, windows);
+  }, 500),
+};
+
+/**
+ * Initialize cache system - call once on app startup
+ * Performs automatic cleanup of expired items
+ */
+export function initializeCache(): void {
+  if (typeof window === 'undefined') return;
+
+  // Clear expired cache items on startup
+  const cleared = clearExpiredCache();
+
+  // Get cache stats for monitoring
+  const stats = getCacheStats();
+
+  if (IS_DEV) {
+    console.log('[Cache] Initialized', {
+      itemsCleared: cleared,
+      totalItems: stats.totalItems,
+      totalSizeKB: (stats.totalSize / 1024).toFixed(2),
+    });
+
+    // Warn if total cache size is large
+    if (stats.totalSize > 3 * 1024 * 1024) {
+      // >3MB
+      console.warn(
+        `[Cache] Total cache size is ${(stats.totalSize / 1024 / 1024).toFixed(2)}MB. Consider using "Reset All Cache" in View menu.`
+      );
+    }
+  }
+
+  // Run cleanup periodically (every 5 minutes)
+  setInterval(() => {
+    const cleaned = clearExpiredCache();
+    if (cleaned > 0 && IS_DEV) {
+      console.log(`[Cache] Periodic cleanup removed ${cleaned} expired items`);
+    }
+  }, 5 * 60 * 1000);
+}

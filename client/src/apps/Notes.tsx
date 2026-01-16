@@ -39,25 +39,19 @@ export function Notes({ onEasterEgg }: NotesProps) {
     }
   }, []);
 
-  // Save state when it changes
+  // Save state when note selection or secret changes (not scroll - that's debounced separately)
   useEffect(() => {
     NotesCache.saveState({
       selectedNoteId: selectedNote.id,
-      scrollPosition: contentRef.current?.scrollTop || 0,
       secretAnswer,
       secretShown: showSecret,
     });
   }, [selectedNote, secretAnswer, showSecret]);
 
-  // Track scroll position changes
+  // Track scroll position changes with debouncing (waits 500ms after last scroll)
   const handleScroll = () => {
     if (contentRef.current) {
-      NotesCache.saveState({
-        selectedNoteId: selectedNote.id,
-        scrollPosition: contentRef.current.scrollTop,
-        secretAnswer,
-        secretShown: showSecret,
-      });
+      NotesCache.saveScrollPositionDebounced(contentRef.current.scrollTop);
     }
   };
 

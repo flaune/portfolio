@@ -94,14 +94,9 @@ export function Paint() {
         ctx.globalCompositeOperation = 'source-over';
       }
 
-      // Save canvas state to cache
+      // Save canvas state with throttling (waits 1.5s after last draw)
       const canvasData = canvas.toDataURL('image/png');
-      PaintCache.saveState({
-        canvasData,
-        color,
-        brushSize: lineWidth,
-        tool,
-      });
+      PaintCache.saveCanvasDataThrottled(canvasData);
     }
   };
 
@@ -114,7 +109,7 @@ export function Paint() {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Clear cached canvas data
+      // Clear cached canvas data immediately (don't wait for throttle)
       PaintCache.saveState({
         canvasData: null,
         color,
@@ -148,13 +143,10 @@ export function Paint() {
     }
   }, []);
 
-  // Save state when color, tool, or lineWidth changes
+  // Save lightweight state immediately when color, tool, or lineWidth changes
+  // Canvas data is saved separately with throttling in stopDrawing
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
     PaintCache.saveState({
-      canvasData: canvas.toDataURL('image/png'),
       color,
       brushSize: lineWidth,
       tool,

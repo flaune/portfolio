@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { cacheSet, cacheGet, CacheKeys, MusicCache } from './cache';
+import { cacheGet, CacheKeys, MusicCache, WindowCache } from './cache';
 
 export type AppId = 'finder' | 'gallery' | 'mail' | 'music' | 'video' | 'paint' | 'notes' | 'bookshelf' | 'linkedin' | 'twitter' | 'substack' | 'kalimba';
 
@@ -187,7 +187,8 @@ export const useOSStore = create<OSState>((set) => ({
       ...state.windows,
       [id]: { ...state.windows[id], isOpen: true, isMinimized: false, zIndex: newZ }
     };
-    cacheSet(CacheKeys.WINDOWS_STATE, newWindows);
+    // Immediate save for open/close operations
+    WindowCache.saveState(newWindows);
     return {
       mobileActiveApp: id,
       windows: newWindows,
@@ -203,7 +204,8 @@ export const useOSStore = create<OSState>((set) => ({
       ...state.windows,
       [id]: { ...state.windows[id], isOpen: true, isMinimized: false, zIndex: newZ }
     };
-    cacheSet(CacheKeys.WINDOWS_STATE, newWindows);
+    // Immediate save for open/close operations
+    WindowCache.saveState(newWindows);
     return {
       windows: newWindows,
       activeWindowId: id,
@@ -216,7 +218,8 @@ export const useOSStore = create<OSState>((set) => ({
       ...state.windows,
       [id]: { ...state.windows[id], isOpen: false }
     };
-    cacheSet(CacheKeys.WINDOWS_STATE, newWindows);
+    // Immediate save for open/close operations
+    WindowCache.saveState(newWindows);
     return { windows: newWindows };
   }),
 
@@ -225,7 +228,8 @@ export const useOSStore = create<OSState>((set) => ({
       ...state.windows,
       [id]: { ...state.windows[id], isMinimized: true }
     };
-    cacheSet(CacheKeys.WINDOWS_STATE, newWindows);
+    // Immediate save for open/close operations
+    WindowCache.saveState(newWindows);
     return {
       windows: newWindows,
       activeWindowId: null
@@ -256,7 +260,8 @@ export const useOSStore = create<OSState>((set) => ({
         }
       };
     }
-    cacheSet(CacheKeys.WINDOWS_STATE, newWindows);
+    // Immediate save for fullscreen toggle
+    WindowCache.saveState(newWindows);
     return { windows: newWindows };
   }),
 
@@ -266,7 +271,8 @@ export const useOSStore = create<OSState>((set) => ({
       ...state.windows,
       [id]: { ...state.windows[id], isMinimized: false, zIndex: newZ }
     };
-    cacheSet(CacheKeys.WINDOWS_STATE, newWindows);
+    // Immediate save for focus/z-index changes
+    WindowCache.saveState(newWindows);
     return {
       windows: newWindows,
       activeWindowId: id,
@@ -279,7 +285,8 @@ export const useOSStore = create<OSState>((set) => ({
       ...state.windows,
       [id]: { ...state.windows[id], position }
     };
-    cacheSet(CacheKeys.WINDOWS_STATE, newWindows);
+    // Debounced save for position updates (happens frequently during drag)
+    WindowCache.saveStateDebounced(newWindows);
     return { windows: newWindows };
   }),
 
@@ -288,7 +295,8 @@ export const useOSStore = create<OSState>((set) => ({
       ...state.windows,
       [id]: { ...state.windows[id], size }
     };
-    cacheSet(CacheKeys.WINDOWS_STATE, newWindows);
+    // Debounced save for size updates (happens frequently during resize)
+    WindowCache.saveStateDebounced(newWindows);
     return { windows: newWindows };
   }),
 
