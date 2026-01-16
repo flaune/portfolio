@@ -169,12 +169,12 @@ function isLocalStorageAvailable(): boolean {
 }
 
 /**
- * Compress canvas data by reducing quality
+ * Compress canvas data by reducing quality (async for better performance)
  * @param dataUrl Base64 canvas data URL
  * @param quality JPEG quality 0-1 (default 0.8)
- * @returns Compressed data URL or original if compression fails
+ * @returns Promise<Compressed data URL or original if compression fails>
  */
-export function compressCanvasData(dataUrl: string, quality: number = 0.8): string {
+export async function compressCanvasData(dataUrl: string, quality: number = 0.8): Promise<string> {
   try {
     // If it's already small enough, return as-is
     const sizeBytes = new Blob([dataUrl]).size;
@@ -182,31 +182,29 @@ export function compressCanvasData(dataUrl: string, quality: number = 0.8): stri
       return dataUrl;
     }
 
-    // For base64 data URLs, we can decode directly without loading an image
-    // This is much faster and synchronous
+    // Use async image loading to avoid blocking the UI thread
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return dataUrl;
 
-    // Create image and load it synchronously (data URLs load immediately)
-    const img = new Image();
-
-    // Data URLs are loaded synchronously, but we still need to handle it properly
-    // We'll use a synchronous approach by checking img.complete
-    img.src = dataUrl;
-
-    // For data URLs, the image should be immediately available
-    // But if not, we can't compress it synchronously, so return original
-    if (!img.complete || img.naturalWidth === 0) {
-      if (IS_DEV) {
-        console.warn('[Cache] Image not immediately available for compression, returning original');
-      }
-      return dataUrl;
-    }
+    // Load image asynchronously
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('Failed to load image'));
+      image.src = dataUrl;
+    });
 
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
-    ctx.drawImage(img, 0, 0);
+
+    // Use requestAnimationFrame to perform canvas operations without blocking
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        ctx.drawImage(img, 0, 0);
+        resolve();
+      });
+    });
 
     // Convert to JPEG with quality reduction
     const compressedData = canvas.toDataURL('image/jpeg', quality);
@@ -515,7 +513,7 @@ export const PaintCache = {
    * Save paint state (immediate for non-canvas data)
    * Canvas data should be saved via saveCanvasDataThrottled
    */
-  saveState: (state: {
+  saveState: async (state: {
     canvasData?: string | null;
     color: string;
     brushSize: number;
@@ -528,8 +526,8 @@ export const PaintCache = {
 
     // Canvas data is saved separately with throttling
     if (state.canvasData !== undefined && state.canvasData !== null) {
-      // Compress before saving
-      const compressed = compressCanvasData(state.canvasData, 0.85);
+      // Compress before saving (async to avoid blocking)
+      const compressed = await compressCanvasData(state.canvasData, 0.85);
       cacheSet(CacheKeys.PAINT_CANVAS_DATA, compressed);
     } else if (state.canvasData === null) {
       // Explicitly clear canvas cache
@@ -541,8 +539,8 @@ export const PaintCache = {
    * Throttled canvas save - use this for drawing operations
    * Saves max once every 1500ms to avoid blocking
    */
-  saveCanvasDataThrottled: throttle((canvasData: string) => {
-    const compressed = compressCanvasData(canvasData, 0.85);
+  saveCanvasDataThrottled: throttle(async (canvasData: string) => {
+    const compressed = await compressCanvasData(canvasData, 0.85);
     cacheSet(CacheKeys.PAINT_CANVAS_DATA, compressed);
   }, 1500), // 1.5 second throttle
 

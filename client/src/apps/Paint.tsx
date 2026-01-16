@@ -95,8 +95,11 @@ export function Paint() {
       }
 
       // Save canvas state with throttling (waits 1.5s after last draw)
-      const canvasData = canvas.toDataURL('image/png');
-      PaintCache.saveCanvasDataThrottled(canvasData);
+      // Use requestAnimationFrame to avoid blocking the UI thread
+      requestAnimationFrame(() => {
+        const canvasData = canvas.toDataURL('image/png');
+        PaintCache.saveCanvasDataThrottled(canvasData);
+      });
     }
   };
 
@@ -110,6 +113,7 @@ export function Paint() {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Clear cached canvas data immediately (don't wait for throttle)
+      // Fire and forget - we don't need to await since clearing is lightweight
       PaintCache.saveState({
         canvasData: null,
         color,
