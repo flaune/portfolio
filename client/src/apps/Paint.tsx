@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useOSStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Eraser, Pencil, MousePointer, Download, Trash2 } from 'lucide-react';
+import { PaintCache } from '@/lib/cache';
 
 const colorNames: Record<string, string> = {
   '#000000': 'Black',
@@ -20,10 +21,13 @@ export function Paint() {
   const isDark = theme === 'dark';
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [color, setColor] = useState('#000000');
-  const [tool, setTool] = useState<'pencil' | 'eraser'>('pencil');
+
+  // Load cached state on initialization
+  const cachedState = PaintCache.loadState();
+  const [color, setColor] = useState(cachedState.color);
+  const [tool, setTool] = useState<'pencil' | 'eraser'>(cachedState.tool);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [lineWidth, setLineWidth] = useState(2);
+  const [lineWidth, setLineWidth] = useState(cachedState.brushSize);
 
   const getPosition = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -89,6 +93,15 @@ export function Paint() {
       if (ctx) {
         ctx.globalCompositeOperation = 'source-over';
       }
+
+      // Save canvas state to cache
+      const canvasData = canvas.toDataURL('image/png');
+      PaintCache.saveState({
+        canvasData,
+        color,
+        brushSize: lineWidth,
+        tool,
+      });
     }
   };
 
@@ -100,13 +113,53 @@ export function Paint() {
       ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Clear cached canvas data
+      PaintCache.saveState({
+        canvasData: null,
+        color,
+        brushSize: lineWidth,
+        tool,
+      });
     }
   };
 
   useEffect(() => {
-    // Init white background
-    clearCanvas();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set white background
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Load cached canvas data if available
+    if (cachedState.canvasData) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+      };
+      img.onerror = () => {
+        console.error('Failed to load cached canvas data');
+      };
+      img.src = cachedState.canvasData;
+    }
   }, []);
+
+  // Save state when color, tool, or lineWidth changes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    PaintCache.saveState({
+      canvasData: canvas.toDataURL('image/png'),
+      color,
+      brushSize: lineWidth,
+      tool,
+    });
+  }, [color, tool, lineWidth]);
 
   const colors = [
     '#000000', '#787c7e', '#ff0000', '#ff8800', '#ffff00', 

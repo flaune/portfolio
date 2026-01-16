@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useOSStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { StickyNote, Sparkles, ChevronLeft } from 'lucide-react';
+import { NotesCache } from '@/lib/cache';
 
 interface NotesProps {
   onEasterEgg?: () => void;
@@ -13,16 +14,52 @@ export function Notes({ onEasterEgg }: NotesProps) {
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
   const [showSidebar, setShowSidebar] = useState(true);
-  
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const [notes, setNotes] = useState([
     { id: 1, title: 'Welcome!', content: 'Feel free to connect with me on Linkedin! I would love to get to know more people' },
     { id: 2, title: 'Quick Tips', content: '• Drag windows to move them\n• Click dock icons to open apps\n• Toggle theme in menu bar' },
     { id: 3, title: 'Roadmap 🚀', content: '# Portfolio Roadmap\n\n## Completed ✅\n• Fixed music player MP3 loading\n• Improved startup animation (fade to black)\n• Added AI Resources \n• Dark mode wallpaper support\n• Created this roadmap!\n\n## In Progress 🔨\n• Optimizing mobile experience\n• Adding more interactive features\n\n## Planned 📋\n• Blog integration\n• Project showcase expansion\n• Custom themes\n• More Easter eggs\n• Performance optimizations\n\n## Future Ideas 💡\n• Commission custom icon app art for the HUD\n• 3D elements\n• Animation improvements\n• Accessibility features\n• Multilingual support\n\nStay tuned for updates!' },
   ]);
 
-  const [selectedNote, setSelectedNote] = useState(notes[0]);
-  const [secretAnswer, setSecretAnswer] = useState('');
-  const [showSecret, setShowSecret] = useState(false);
+  // Load cached state
+  const cachedState = NotesCache.loadState();
+  const initialNote = cachedState.selectedNoteId
+    ? notes.find(n => n.id === cachedState.selectedNoteId) || notes[0]
+    : notes[0];
+
+  const [selectedNote, setSelectedNote] = useState(initialNote);
+  const [secretAnswer, setSecretAnswer] = useState(cachedState.secretAnswer || '');
+  const [showSecret, setShowSecret] = useState(cachedState.secretShown || false);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    if (contentRef.current && cachedState.scrollPosition > 0) {
+      contentRef.current.scrollTop = cachedState.scrollPosition;
+    }
+  }, []);
+
+  // Save state when it changes
+  useEffect(() => {
+    NotesCache.saveState({
+      selectedNoteId: selectedNote.id,
+      scrollPosition: contentRef.current?.scrollTop || 0,
+      secretAnswer,
+      secretShown: showSecret,
+    });
+  }, [selectedNote, secretAnswer, showSecret]);
+
+  // Track scroll position changes
+  const handleScroll = () => {
+    if (contentRef.current) {
+      NotesCache.saveState({
+        selectedNoteId: selectedNote.id,
+        scrollPosition: contentRef.current.scrollTop,
+        secretAnswer,
+        secretShown: showSecret,
+      });
+    }
+  };
 
   const handleSecretSubmit = () => {
     const answer = secretAnswer.trim().toLowerCase();
@@ -101,7 +138,7 @@ export function Notes({ onEasterEgg }: NotesProps) {
 
       {/* Note Content - hidden on mobile when viewing sidebar */}
       {(!isMobile || !showSidebar) && (
-      <div className="flex-1 p-6 overflow-auto">
+      <div ref={contentRef} onScroll={handleScroll} className="flex-1 p-6 overflow-auto">
         {showSecret ? (
           <div className="h-full flex flex-col items-center justify-center text-center relative">
             {isMobile && (
