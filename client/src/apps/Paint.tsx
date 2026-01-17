@@ -157,6 +157,52 @@ export function Paint() {
     });
   }, [color, tool, lineWidth]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'p':
+          setTool('pencil');
+          break;
+        case 'e':
+          setTool('eraser');
+          break;
+        case 'c':
+          if (e.ctrlKey || e.metaKey) {
+            // Allow default copy behavior
+            return;
+          }
+          clearCanvas();
+          break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+          {
+            const index = parseInt(e.key) - 1;
+            if (index < colors.length) {
+              setColor(colors[index]);
+              setTool('pencil');
+            }
+          }
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [colors]);
+
   const colors = [
     '#000000', '#787c7e', '#ff0000', '#ff8800', '#ffff00', 
     '#00ff00', '#0000ff', '#8800ff', '#ff00ff'
@@ -250,10 +296,11 @@ export function Paint() {
       
       {/* Status Bar */}
       <div className={cn(
-        "h-6 border-t px-2 text-xs flex items-center select-none",
+        "h-6 border-t px-2 text-xs flex items-center select-none justify-between",
         !isDark ? "bg-[#f0f0f0] text-gray-600" : "bg-[#2d2d2d] text-gray-400"
       )}>
-        {tool === 'pencil' ? 'Drawing...' : 'Erasing...'} | Size: {lineWidth}px | Pos: X, Y
+        <span>{tool === 'pencil' ? 'Drawing...' : 'Erasing...'} | Size: {lineWidth}px</span>
+        <span className="hidden sm:inline opacity-70">Shortcuts: P (Pencil) | E (Eraser) | 1-9 (Colors) | C (Clear)</span>
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ interface WindowProps {
 }
 
 export function Window({ id, children }: WindowProps) {
-  const { windows, focusWindow, closeWindow, minimizeWindow, toggleFullscreen, updateWindowPosition, updateWindowSize, theme, mobileActiveApp, closeMobileApp } = useOSStore();
+  const { windows, focusWindow, closeWindow, minimizeWindow, toggleFullscreen, updateWindowPosition, updateWindowSize, theme, mobileActiveApp, closeMobileApp, reduceMotion } = useOSStore();
   const windowState = windows[id];
   const isMobile = useIsMobile();
   
@@ -70,10 +70,10 @@ export function Window({ id, children }: WindowProps) {
         className="pointer-events-auto"
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          initial={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
+          animate={reduceMotion ? false : { scale: 1, opacity: 1 }}
+          exit={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.2 }}
         >
           {children}
         </motion.div>
@@ -83,11 +83,11 @@ export function Window({ id, children }: WindowProps) {
 
   if (isMobile) {
     return (
-      <motion.div 
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+      <motion.div
+        initial={reduceMotion ? false : { y: '100%' }}
+        animate={reduceMotion ? false : { y: 0 }}
+        exit={reduceMotion ? false : { y: '100%' }}
+        transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
         className={cn(
           "fixed inset-0 z-[9999] flex flex-col pointer-events-auto",
           !isDark && "bg-[#FAF9F6]",
@@ -103,12 +103,13 @@ export function Window({ id, children }: WindowProps) {
           !isDark && "bg-[#EAD477] border-[#D99D3C]/30",
           isDark && "bg-[#1a1a1a] border-gray-800"
         )}>
-          <button 
+          <button
             onClick={handleGoBack}
             className="p-2 -ml-2 active:opacity-50 relative z-10"
+            aria-label="Go back"
             data-testid="button-mobile-back"
           >
-            <ArrowLeft className={cn("w-6 h-6", !isDark ? "text-[#2C2C2C]" : "text-blue-400")} />
+            <ArrowLeft className={cn("w-6 h-6", !isDark ? "text-[#2C2C2C]" : "text-blue-400")} aria-hidden="true" />
           </button>
           <span className={cn(
             "absolute inset-0 flex items-center justify-center font-semibold text-lg pointer-events-none",

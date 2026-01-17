@@ -21,9 +21,21 @@ function ViewDropdown() {
         setShowResetConfirm(false);
       }
     }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+        setShowResetConfirm(false);
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   const zoomOptions = [75, 100, 125, 150];
 
@@ -49,10 +61,13 @@ function ViewDropdown() {
           isOpen && (isDark ? "bg-white/10" : "bg-black/10"),
           "hover:opacity-70"
         )}
+        aria-label="Open View menu"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
         data-testid="menu-view"
       >
         View
-        <ChevronDown className="w-3 h-3" />
+        <ChevronDown className="w-3 h-3" aria-hidden="true" />
       </button>
 
       {isOpen && (
@@ -68,9 +83,10 @@ function ViewDropdown() {
               !isDark && "hover:bg-gray-100",
               isDark && "hover:bg-white/10"
             )}
+            aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
             data-testid="menu-toggle-theme"
           >
-            {isDark ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+            {isDark ? <Sun className="w-4 h-4 text-yellow-400" aria-hidden="true" /> : <Moon className="w-4 h-4 text-indigo-600" aria-hidden="true" />}
             <span>Toggle Light/Dark Mode</span>
           </button>
 
@@ -81,13 +97,15 @@ function ViewDropdown() {
               !isDark && "hover:bg-gray-100",
               isDark && "hover:bg-white/10"
             )}
+            aria-label={`Reduce motion ${reduceMotion ? 'enabled' : 'disabled'}. Click to ${reduceMotion ? 'disable' : 'enable'}`}
+            aria-pressed={reduceMotion}
             data-testid="menu-reduce-motion"
           >
             <div className="flex items-center gap-3">
-              <Eye className="w-4 h-4 opacity-70" />
+              <Eye className="w-4 h-4 opacity-70" aria-hidden="true" />
               <span>Reduce Motion</span>
             </div>
-            {reduceMotion && <Check className="w-4 h-4 text-green-500" />}
+            {reduceMotion && <Check className="w-4 h-4 text-green-500" aria-hidden="true" />}
           </button>
 
           <button
@@ -98,9 +116,10 @@ function ViewDropdown() {
                 ? (isDark ? "bg-red-500/20 hover:bg-red-500/30" : "bg-red-50 hover:bg-red-100")
                 : (isDark ? "hover:bg-white/10" : "hover:bg-gray-100")
             )}
+            aria-label={showResetConfirm ? "Click again to confirm cache reset" : "Reset all cached data"}
             data-testid="menu-reset-cache"
           >
-            <Trash2 className={cn("w-4 h-4", showResetConfirm ? "text-red-500" : "opacity-70")} />
+            <Trash2 className={cn("w-4 h-4", showResetConfirm ? "text-red-500" : "opacity-70")} aria-hidden="true" />
             <span className={showResetConfirm ? "text-red-500 font-medium" : ""}>
               {showResetConfirm ? "Click again to confirm" : "Reset All Cache"}
             </span>
@@ -122,6 +141,8 @@ function ViewDropdown() {
                       ? (isDark ? "bg-blue-600 text-white" : "bg-blue-500 text-white")
                       : (isDark ? "bg-white/10 hover:bg-white/20" : "bg-gray-100 hover:bg-gray-200")
                   )}
+                  aria-label={`Set UI zoom to ${zoom} percent`}
+                  aria-pressed={uiZoom === zoom}
                   data-testid={`menu-zoom-${zoom}`}
                 >
                   {zoom}%
@@ -138,6 +159,19 @@ function ViewDropdown() {
 function HelpModal() {
   const { showHelpModal, setShowHelpModal, theme } = useOSStore();
   const isDark = theme === 'dark';
+
+  useEffect(() => {
+    if (!showHelpModal) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setShowHelpModal(false);
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showHelpModal, setShowHelpModal]);
 
   if (!showHelpModal) return null;
 
@@ -163,12 +197,13 @@ function HelpModal() {
             <HelpCircle className="w-5 h-5 opacity-70" />
             <h2 className="font-semibold">How this OS works</h2>
           </div>
-          <button 
+          <button
             onClick={() => setShowHelpModal(false)}
             className="p-1 rounded hover:bg-black/10 transition-colors"
+            aria-label="Close help modal"
             data-testid="help-modal-close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -217,9 +252,10 @@ export function MenuBar() {
           <span className="font-bold text-lg"></span>
           <span className={cn("hidden sm:inline font-bold", !isDark && "text-[#2C2C2C]", isDark && "text-blue-400")}>Bhach</span>
           <ViewDropdown />
-          <button 
+          <button
             onClick={() => setShowHelpModal(true)}
             className="hidden sm:inline cursor-pointer hover:opacity-70"
+            aria-label="Open help modal"
             data-testid="menu-help"
           >
             Help
@@ -227,21 +263,22 @@ export function MenuBar() {
         </div>
 
         <div className={cn("flex items-center text-sm", isMobile ? "gap-2" : "gap-4")}>
-          <button 
+          <button
             onClick={toggleTheme}
             className={cn(
               "p-1 rounded-full transition-colors",
               !isDark && "hover:bg-[#D99D3C]/30",
               isDark && "hover:bg-white/10"
             )}
+            aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
             data-testid="button-toggle-theme"
           >
-            {isDark ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-5 h-5 text-[#2C2C2C] fill-[#2C2C2C]" />}
+            {isDark ? <Sun className="w-4 h-4 text-yellow-400" aria-hidden="true" /> : <Moon className="w-5 h-5 text-[#2C2C2C] fill-[#2C2C2C]" aria-hidden="true" />}
           </button>
 
-          {!isMobile && <Wifi className={cn("w-4 h-4", !isDark && "text-[#2C2C2C]")} />}
-          <Battery className={cn("w-4 h-4", !isDark && "text-[#2C2C2C]")} />
-          {!isMobile && <Search className={cn("w-4 h-4", !isDark && "text-[#2C2C2C]")} />}
+          {!isMobile && <Wifi className={cn("w-4 h-4", !isDark && "text-[#2C2C2C]")} aria-label="WiFi connected" />}
+          <Battery className={cn("w-4 h-4", !isDark && "text-[#2C2C2C]")} aria-label="Battery status" />
+          {!isMobile && <Search className={cn("w-4 h-4", !isDark && "text-[#2C2C2C]")} aria-label="Search" />}
           
           <span className={cn(
             "tabular-nums font-medium text-right text-xs sm:text-sm",

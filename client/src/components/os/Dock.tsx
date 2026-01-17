@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useSpring, useTransform, MotionValue } from 'framer-motion';
-import { useRef, memo, useCallback } from 'react';
+import { useRef, memo, useCallback, useEffect } from 'react';
 import { useOSStore, AppId } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,9 +17,9 @@ import {
   Piano
 } from 'lucide-react';
 
-const DockIcon = memo(function DockIcon({ mouseX, id, icon: Icon, label, isMobile, external }: { mouseX: MotionValue, id: AppId, icon: any, label: string, isMobile: boolean, external?: string }) {
+const DockIcon = memo(function DockIcon({ mouseX, id, icon: Icon, label, isMobile, external, onArrowKey }: { mouseX: MotionValue, id: AppId, icon: any, label: string, isMobile: boolean, external?: string, onArrowKey?: (direction: 'left' | 'right') => void }) {
   const ref = useRef<HTMLButtonElement>(null);
-  const { openWindow, minimizeWindow, focusWindow, windows, theme } = useOSStore();
+  const { openWindow, minimizeWindow, focusWindow, windows, theme, reduceMotion } = useOSStore();
   const isDark = theme === 'dark';
   const isOpen = windows[id]?.isOpen;
 
@@ -28,7 +28,9 @@ const DockIcon = memo(function DockIcon({ mouseX, id, icon: Icon, label, isMobil
     return val - bounds.x - bounds.width / 2;
   });
 
-  const widthSync = useTransform(distance, [-150, 0, 150], isMobile ? [40, 40, 40] : [50, 90, 50]);
+  // Disable hover animation if reduceMotion is enabled
+  const baseWidth = isMobile ? 40 : 50;
+  const widthSync = useTransform(distance, [-150, 0, 150], isMobile || reduceMotion ? [baseWidth, baseWidth, baseWidth] : [50, 90, 50]);
   const width = useSpring(widthSync, { mass: 0.1, stiffness: 150, damping: 12 });
 
   const handleClick = useCallback(() => {
@@ -60,8 +62,11 @@ const DockIcon = memo(function DockIcon({ mouseX, id, icon: Icon, label, isMobil
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       handleClick();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      onArrowKey?.(e.key === 'ArrowLeft' ? 'left' : 'right');
     }
-  }, [handleClick]);
+  }, [handleClick, onArrowKey]);
 
   return (
     <div className="flex flex-col items-center gap-1 group flex-shrink-0">
@@ -77,7 +82,7 @@ const DockIcon = memo(function DockIcon({ mouseX, id, icon: Icon, label, isMobil
           !isDark && "bg-[#FAF9F6] shadow-[0_5px_10px_rgba(0,0,0,0.15)] border border-[#EAD477]/50 hover:bg-[#EAD477]/20 focus-visible:ring-2 focus-visible:ring-[#D99D3C] focus-visible:outline-none",
           isDark && "bg-black/60 border border-blue-500/30 shadow-[0_0_15px_rgba(0,100,255,0.3)] hover:bg-blue-500/20 hover:shadow-[0_0_25px_rgba(0,100,255,0.5)] focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
         )}
-        whileTap={{ scale: 0.9 }}
+        whileTap={reduceMotion ? undefined : { scale: 0.9 }}
       >
         <Icon
           className={cn(
@@ -116,6 +121,7 @@ export function Dock() {
   const { theme } = useOSStore();
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
+  const dockRef = useRef<HTMLDivElement>(null);
 
   const apps: { id: AppId, icon: any, label: string, external?: string }[] = [
     { id: 'finder', icon: FolderOpen, label: 'Finder' },
@@ -131,6 +137,17 @@ export function Dock() {
     { id: 'substack', icon: FileText, label: 'Substack', external: 'https://substack.com/@bhach' },
   ];
 
+  const handleArrowKey = useCallback((currentIndex: number, direction: 'left' | 'right') => {
+    if (!dockRef.current) return;
+
+    const buttons = Array.from(dockRef.current.querySelectorAll('button'));
+    const newIndex = direction === 'left'
+      ? (currentIndex - 1 + buttons.length) % buttons.length
+      : (currentIndex + 1) % buttons.length;
+
+    buttons[newIndex]?.focus();
+  }, []);
+
   return (
     <nav
       className={cn(
@@ -140,6 +157,7 @@ export function Dock() {
       aria-label="Application dock"
     >
       <motion.div
+        ref={dockRef}
         onMouseMove={(e) => mouseX.set(e.pageX)}
         onMouseLeave={() => mouseX.set(Infinity)}
         className={cn(
@@ -151,8 +169,14 @@ export function Dock() {
           isDark && "bg-black/40 backdrop-blur-xl border border-blue-500/20 shadow-[0_0_30px_rgba(0,0,0,0.5)]"
         )}
       >
-        {apps.map((app) => (
-          <DockIcon key={app.id} mouseX={mouseX} isMobile={isMobile} {...app} />
+        {apps.map((app, index) => (
+          <DockIcon
+            key={app.id}
+            mouseX={mouseX}
+            isMobile={isMobile}
+            onArrowKey={(direction) => handleArrowKey(index, direction)}
+            {...app}
+          />
         ))}
       </motion.div>
     </nav>
