@@ -19,7 +19,7 @@ import {
 
 const DockIcon = memo(function DockIcon({ mouseX, id, icon: Icon, label, isMobile, external }: { mouseX: MotionValue, id: AppId, icon: any, label: string, isMobile: boolean, external?: string }) {
   const ref = useRef<HTMLButtonElement>(null);
-  const { openWindow, windows, theme } = useOSStore();
+  const { openWindow, minimizeWindow, focusWindow, windows, theme } = useOSStore();
   const isDark = theme === 'dark';
   const isOpen = windows[id]?.isOpen;
 
@@ -35,9 +35,26 @@ const DockIcon = memo(function DockIcon({ mouseX, id, icon: Icon, label, isMobil
     if (external) {
       window.open(external, '_blank');
     } else {
-      openWindow(id);
+      const currentWindow = windows[id];
+
+      // Only toggle on desktop (PC)
+      if (!isMobile) {
+        if (currentWindow?.isOpen && !currentWindow.isMinimized) {
+          // Window is open and visible → minimize it
+          minimizeWindow(id);
+        } else if (currentWindow?.isMinimized) {
+          // Window is minimized → restore/focus it
+          focusWindow(id);
+        } else {
+          // Window is closed → open it
+          openWindow(id);
+        }
+      } else {
+        // On mobile, keep the existing behavior
+        openWindow(id);
+      }
     }
-  }, [external, id, openWindow]);
+  }, [external, id, openWindow, minimizeWindow, focusWindow, windows, isMobile]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
